@@ -23,6 +23,7 @@
 #include <errno.h>
 #include <iostream>
 
+
 int tc_login(int argc, char* argv[]) {
     if (ITK_ok != ITK_init_from_cpp(argc, argv))
     {
@@ -47,11 +48,9 @@ int tc_login(int argc, char* argv[]) {
     return 0;
 }
 
-int change_ownership(tag_t tag1, tag_t tag2, const std::string& user, const std::string& userGroup) {
+int change_ownership(tag_t tag1, const std::string& user, const std::string& userGroup) {
 
-    //mÏnÌ ownership objektu, p¯edpokl·d· se zmÏna poloûky i revize najednou
     AOM_unlock(tag1);
-    AOM_unlock(tag2);
 
     tag_t userTag;
     tag_t userGroupTag;
@@ -60,17 +59,16 @@ int change_ownership(tag_t tag1, tag_t tag2, const std::string& user, const std:
     SA_find_group(userGroup.c_str(), &userGroupTag);
 
     AOM_set_ownership(tag1, userTag, userGroupTag);
-    AOM_set_ownership(tag2, userTag, userGroupTag);
 
     AOM_lock(tag1);
-    AOM_lock(tag2);
 
     return 0;
 }
 
-tag_t create_item(const std::string& itemId, const std::string& itemName, const std::string& itemType, const std::string& itemDesc, const std::string& user, const std::string& userGroup) {
+std::vector<tag_t> create_item(const std::string& itemId, const std::string& itemName, const std::string& itemType, const std::string& itemDesc, const std::string& user, const std::string& userGroup) {
     tag_t Item = NULLTAG;
     tag_t Rev = NULLTAG;
+    std::vector<tag_t> Tags;
     int ReturnCode = ITEM_create_item(itemId.c_str(), itemName.c_str(), itemType.c_str(), 0, &Item, &Rev);
     if (ReturnCode == ITK_ok)
         {
@@ -80,9 +78,8 @@ tag_t create_item(const std::string& itemId, const std::string& itemName, const 
         ITEM_save_item(Item);
         ITEM_save_rev(Rev);
 
-        //ownership se mÏnÌ p¯Ìmo ve funkci create item, v p¯ÌpadÏ jinÈho pouûÌt je pot¯eba tuto funkci upravit
-        change_ownership(Item, Rev, user, userGroup);
-        
+        Tags.push_back(Item);
+        Tags.push_back(Rev);       
 
         char* Id = new char[ITEM_id_size_c + 1];
         char* Name = new char[ITEM_name_size_c + 1];
@@ -94,14 +91,14 @@ tag_t create_item(const std::string& itemId, const std::string& itemName, const 
         printf("\nVytvoreni polozky: %s-%s\n", Id, Name);
     }
     else
-        fprintf(stderr, "ERROR: Vytvo¯enÌ poloûky selhalo\n");
+        fprintf(stderr, "ERROR: Vytvo≈ôen√≠ polo≈æky selhalo\n");
 
-    //returns ItemRevision Tag
-    return Rev;
+    //returns Item and ItemRevision Tag
+    return Tags;
 }
 
 tag_t* find_item(const std::string& InputAttrValues) {
-    // Vyhled·nÌ poloûek
+    // Vyhled√°n√≠ polo≈æek
     const char* AttrNames[1] = { ITEM_ITEM_ID_PROP };
     const char* AttrValues[1] = { InputAttrValues.c_str() };
     int ItemsCount = 0;
@@ -109,23 +106,8 @@ tag_t* find_item(const std::string& InputAttrValues) {
     tag_t* Items;
     ITEM_find_items_by_key_attributes(1, AttrNames, AttrValues, &ItemsCount, &Items);
 
-
-    /* old
-    // V˝pis poloûek
-
-    char Id[ITEM_id_size_c + 1];
-    char Name[ITEM_name_size_c + 1];
-    for (int i = 0; i < ItemsCount; i++)
-    {
-        //ITEM_find_item
-        ITEM_ask_id(Items[i], Id);
-        ITEM_ask_name(Items[i], Name);
-        printf("%s %s\n", Id, Name);
-    }
-    */
-
     // new
-    // V˝pis poloûek
+    // V√Ωpis polo≈æek
     /*
     char* Id = new char[ITEM_id_size_c + 1];
     char* Name = new char[ITEM_name_size_c + 1];
@@ -139,7 +121,7 @@ tag_t* find_item(const std::string& InputAttrValues) {
     }
     */
 
-    //vr·tÌ tagy revize
+    //vr√°t√≠ tagy Item≈Ø
     return Items;
 }
 
@@ -156,7 +138,7 @@ std::vector<std::string> splitString(const std::string& line, char delimiter) {
 }
 
 std::vector<std::vector<std::string>> readCSV(const std::string& filename) {
-    // funkce na nahr·nÌ csv souboru do "2D listu" 
+    // funkce na nahr√°n√≠ csv souboru do "2D listu" 
     std::vector<std::vector<std::string>> data;
     std::ifstream file(filename);
     std::string line;
@@ -172,6 +154,8 @@ std::vector<std::vector<std::string>> readCSV(const std::string& filename) {
 }
 
 int main(int argc, char* argv[]) {
+    //promƒõnn√°, do kter√© se postupnƒõ ukl√°daj√≠ tagy v≈°ech objekt≈Ø, kter√Ωm je pot≈ôeba na konci zmƒõnit owner a group ID
+    std::vector<tag_t> allTags;
 
     std::string itemType;
     std::string user;
@@ -192,12 +176,12 @@ int main(int argc, char* argv[]) {
     int rows = csvData.size();
     tc_login(argc, argv);
 
-    // Vytvo¯enÌ poloûky
+    // Vytvo≈ôen√≠ polo≈æky
     tag_t Item = NULLTAG;
     tag_t Rev = NULLTAG;
 
-    // Je pot¯eba zmÏnit
-    // 1. poloûka se vytv·¯Ì mimo for loop a vytvo¯Ì se na nÌ BOM view vûdy
+    // Je pot≈ôeba zmƒõnit
+    // 1. polo≈æka se vytv√°≈ô√≠ mimo for loop a vytvo≈ô√≠ se na n√≠ BOM view v≈ædy
     int ReturnCode = 0;
     if (csvData[1][1] == "") {
         int ReturnCode = ITEM_create_item(csvData[1][3].c_str(), "0000", itemType.c_str(), 0, &Item, &Rev);
@@ -213,7 +197,8 @@ int main(int argc, char* argv[]) {
         ITEM_save_item(Item);
         ITEM_save_rev(Rev);
 
-        change_ownership(Item, Rev, user, userGroup);
+        allTags.push_back(Item);
+        allTags.push_back(Rev);
 
         char* Id = new char[ITEM_id_size_c + 1];
         char* Name = new char[ITEM_name_size_c + 1];
@@ -223,67 +208,74 @@ int main(int argc, char* argv[]) {
         ITEM_ask_name2(Item, &Name);
 
         printf("\nVytvoreni polozky: %s-%s\n", Id, Name);
-        printf("Vytvo¯enÌ BOM View na itemu %s-%s\n", Id, Name);
+        printf("Vytvo≈ôen√≠ BOM View na itemu %s-%s\n", Id, Name);
     }
     else
-        fprintf(stderr, "ERROR: Vytvoreni poloûky selhalo\n");
+        fprintf(stderr, "ERROR: Vytvoreni polo≈æky selhalo\n");
 
-    // Vytvo¯enÌ BomView
+    // Vytvo≈ôen√≠ BomView
     tag_t BomView = NULLTAG;
     AOM_lock(Item);
     PS_create_bom_view(BomView, NULL, NULL, Item, &BomView);
     AOM_save_without_extensions(BomView);
     ITEM_save_item(Item);
-
+    
     // BomView Type
     tag_t BomViewType = NULLTAG;
     PS_ask_default_view_type(&BomViewType);
 
-    // Vytvo¯enÌ BomView Revision
+    // Vytvo≈ôen√≠ BomView Revision
     tag_t BomViewRev = NULLTAG;
     AOM_lock(Rev);
     PS_create_bvr(BomView, NULL, NULL, true, Rev, &BomViewRev);
     AOM_save_without_extensions(BomViewRev);
     AOM_save_without_extensions(Rev);
 
-    change_ownership(BomView, BomViewRev, user, userGroup);
+    allTags.push_back(BomView);
+    allTags.push_back(BomViewRev);
 
-    // for loop pro kaûdou poloûku v csv file, p¯edpokl·d· se ûe vöechny n·sledujÌcÌ poloûky majÌ ID, Name a Description ve sloupcÌch [3],[1] a [4]
+    // for loop pro ka≈ædou polo≈æku v csv file, p≈ôedpokl√°d√° se ≈æe v≈°echny n√°sleduj√≠c√≠ polo≈æky maj√≠ ID, Name a Description ve sloupc√≠ch [3],[1] a [4]
     for (int i = 2; i < rows; i++) {
-        tag_t Rev = create_item(csvData[i][3], csvData[i][1], itemType.c_str(), csvData[i][4], user, userGroup);
+        std::vector<tag_t> Tags = create_item(csvData[i][3], csvData[i][1], itemType.c_str(), csvData[i][4], user, userGroup);
+        tag_t Rev = Tags[1];
 
+        allTags.push_back(Tags[0]);
+        allTags.push_back(Tags[1]);
+
+        // p≈ôedpokl√°d√° se ≈æe level je uveden ve sloupci [0] a je ve form√°tu ..2, ...3,...; nebo 1,2,3,...
+        // kod by nefungoval v p≈ô√≠padƒõ ≈æe by byl level vy≈°≈°√≠ ne≈æ 9
         int origLevel = (csvData[i][0].at(csvData[i][0].length() - 1)) - 48;
         int goalLevel = origLevel - 1;
         if (goalLevel < 1) {
             goalLevel = 1;
         }
         int currentItem = i;
-        // while loop kter˝ se opakuje dokuÔ nenalezne poloûku, kter· m· o 1 niûöÌ level neû ona samotn·
-        // n·slednÏ na poloûce vytvo¯Ì BOM view (pokuÔ jiû neexstiuje)
+        // while loop kter√Ω se opakuje dokuƒè nenalezne polo≈æku, kter√° m√° o 1 ni≈æ≈°√≠ level ne≈æ ona samotn√°
+        // n√°slednƒõ na polo≈æce vytvo≈ô√≠ BOM view (pokuƒè ji≈æ neexistuje)
         while (true) {
             int level = (csvData[currentItem][0].at(csvData[currentItem][0].length() - 1)) - 48;
             if (level == goalLevel) {
                 if (origLevel == 1) {
                     tag_t* Occurrences;
                     AOM_lock(BomViewRev);
+                    // p≈ôedpokl√°d√° se, ≈æe poƒçet polo≈æek je ve sloupci [14]
                     PS_create_occurrences(BomViewRev, Rev, NULLTAG, std::stoi(csvData[i][14]), &Occurrences);
                     AOM_save_without_extensions(BomViewRev);
                     MEM_free(Occurrences);
                 }
                 else {
-
                     tag_t* Parent = find_item(csvData[currentItem][3]);
                     int RevCount;
                     tag_t* ParentRev;
                     ITEM_find_revisions(Parent[0], "*", &RevCount, &ParentRev);
 
-                    // kontrola zda Bom View jiû existuje
+                    // kontrola zda Bom View ji≈æ existuje
                     int bvr_count;
                     tag_t* bvrs;
                     ITEM_rev_list_all_bom_view_revs(ParentRev[0], &bvr_count, &bvrs);
 
                     if (bvr_count == 0) {
-                        // Vytvo¯enÌ BomView
+                        // Vytvo≈ôen√≠ BomView
                         tag_t BomView = NULLTAG;
                         AOM_lock(Parent[0]);
                         PS_create_bom_view(BomView, NULL, NULL, Parent[0], &BomView);
@@ -295,14 +287,15 @@ int main(int argc, char* argv[]) {
                         tag_t BomViewType = NULLTAG;
                         PS_ask_default_view_type(&BomViewType);
 
-                        // Vytvo¯enÌ BomView Revision
+                        // Vytvo≈ôen√≠ BomView Revision
                         tag_t SubBomViewRev = NULLTAG;
                         AOM_lock(ParentRev[0]);
                         PS_create_bvr(BomView, NULL, NULL, true, ParentRev[0], &SubBomViewRev);
                         AOM_save_without_extensions(SubBomViewRev);
                         AOM_save_without_extensions(ParentRev[0]);
 
-                        change_ownership(BomView,SubBomViewRev, user, userGroup);
+                        allTags.push_back(BomView);
+                        allTags.push_back(SubBomViewRev);
 
                         char* Id = new char[ITEM_id_size_c + 1];
                         char* Name = new char[ITEM_name_size_c + 1];
@@ -317,6 +310,7 @@ int main(int argc, char* argv[]) {
 
                     tag_t* Occurrences;
                     AOM_lock(bvrs[0]);
+                    // p≈ôedpokl√°d√° se, ≈æe poƒçet polo≈æek je ve sloupci [14]
                     PS_create_occurrences(bvrs[0], Rev, NULLTAG, std::stoi(csvData[i][14]), &Occurrences);
                     AOM_save_without_extensions(bvrs[0]);
 
@@ -329,8 +323,14 @@ int main(int argc, char* argv[]) {
             else {
                 currentItem -= 1;
             }
-
         }
     }
+
+    // Zmƒõ≈à ownership v≈°ech Item≈Ø, reviz√≠ a BOM views
+    std::cout << "Menim ownership, utilitu zatim nevyp√≠nejte...\n";
+    for (int i = 0; i < allTags.size(); i++) {
+        change_ownership(allTags[i], user.c_str(), userGroup.c_str());
+    }
+    std::cout << "\nHotovo\n";
     ITK_exit_module(true);
 }
