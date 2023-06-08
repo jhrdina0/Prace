@@ -55,7 +55,7 @@ extern "C" DLLAPI int TPV_BOM2CSV_TC14_init_module(int* decision, va_list args)
 }
 
 tag_t find_itemRevision(const std::string& InputAttrValues, const std::string& RevId) {
-    // Vyhled·nÌ poloûek
+    // Vyhled√°n√≠ polo≈æek
     const char* AttrNames[1] = { ITEM_ITEM_ID_PROP };
     const char* AttrValues[1] = { InputAttrValues.c_str() };
     int ItemsCount = 0;
@@ -67,7 +67,7 @@ tag_t find_itemRevision(const std::string& InputAttrValues, const std::string& R
     ITEM_find_revision(Items[0], RevId.c_str(), &Rev);
 
     MEM_free(Items);
-    //vr·tÌ tag revize Itemu
+    //vr√°t√≠ tag revize Itemu
     return Rev;
 }
 
@@ -159,12 +159,12 @@ int createCSV(std::vector<std::vector<std::string>> csv)
 {
     std::ofstream file;
     file.open("C:\\SPLM\\Apps\\Export\\Export.csv");
-    file << "PARENT ITEM ID, ITEM ID, ITEM REV ID, ITEM QUANTITY, FIND NO\n";
+    file << "PARENT ITEM ID;ITEM ID;ITEM REV ID;ITEM QUANTITY;FIND NO\n";
     for (int i = 0; i < csv.size(); i++) {
-        int j = 0;
-        for (j; j < 5; j++) {
+        file << csv[i][0];
+        for (int j = 1; j < 5; j++) {
+            file << ";";
             file << csv[i][j];
-            file << ",";
         }
         file << "\n";
     }
