@@ -9,6 +9,7 @@
 #include <ics/ics.h>
 #include <ics/ics2.h>
 #include <string>
+#include <algorithm>
 #include <iostream>
 #include <string.h>
 #include <ps/ps.h>
@@ -149,10 +150,33 @@ std::string readElement(PROP_value_type_t valtype, std::string property_name, ta
     }
     else if (valtype == PROP_typed_reference) {
         tag_t uom;
-        ITEM_ask_unit_of_measure(Tag, &uom);
-        char* symbol;
-        UOM_ask_symbol(uom, &symbol);
-        return symbol;
+        tag_t value_tag;
+        char* name;
+        char* value;
+        AOM_ask_value_tag(Tag, property_name.c_str(), &value_tag);
+        if (value_tag == 0) {
+            return "ks";
+
+        }
+        else {
+            AOM_ask_value_string(value_tag, "object_string", &value);
+            return value;
+        }
+    }
+    else if (valtype == PROP_untyped_reference) {
+        tag_t uom;
+        tag_t value_tag;
+        char* name;
+        char* value;
+        AOM_ask_value_tag(Tag, property_name.c_str(), &value_tag);
+        if (value_tag == 0) {
+            return "";
+
+        }
+        else {
+            AOM_ask_value_string(value_tag, "object_string", &value);
+            return value;
+        }
     }
     // If the valtype is not handled, return an empty string
     return "";
@@ -208,6 +232,7 @@ vectorArray RecursiveBOM(const std::string& InputAttrValues, const std::string& 
             AOM_ask_value_type(Tag, config[j][1].c_str(), &valtype, &valtype_n);
 
             std::string value = readElement(valtype, config[j][1], Tag);
+            std::replace(value.begin(), value.end(), ';', ',');
 
             csv_row.push_back(value);
             MEM_free(valtype_n);
@@ -255,6 +280,8 @@ vectorArray RecursiveBOM(const std::string& InputAttrValues, const std::string& 
                 AOM_ask_value_type(Tag, config[j][1].c_str(), &valtype, &valtype_n);
 
                 std::string value = readElement(valtype, config[j][1], Tag);
+                //všechny ; symboly jsou nahrazeny , aby se nepoškodil formát csv
+                std::replace(value.begin(), value.end(), ';', ',');
 
                 csv_row.push_back(value);
                 MEM_free(valtype_n);
@@ -396,11 +423,6 @@ int TPV_BOM2CSV_TC14(EPM_action_message_t msg)
             AOM_ask_value_string(attachments[i], "item_id", &ItemId);
             AOM_ask_value_string(attachments[i], "current_revision_id", &RevId);
 
-            /*std::vector<std::string> csv_row;
-            for (int i = 0; i < csv.size(); i++) {
-                csv_row.push_back(config[i][1]);
-            }
-            csv.push_back(csv_row);*/
             csv = RecursiveBOM(ItemId, RevId, csv, config, true);
 
             createCSV(csv, exportFolderPath, config, ItemId, RevId);
