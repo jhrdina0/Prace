@@ -1,0 +1,49 @@
+bl_item_object_type;bl_parent;item_id;uom_tag;current_desc;bl_quantity;tpv4_rozmer_norma;tpv4_atribut_1;tpv4_atribut_2;tpv4_sklad_mn;last_mod_date;PDF,IMAN_specification;DXF,IMAN_specification;
+TPV4_hut_mat;;202120000;CM;outrigger arm lh weld. 10 Meter;;wadad123;;;158.000000;2023-5-13 23:27:19;C:\\SPLM\\Apps\\Export\\PDF\202120000test3.pdf;C:\\SPLM\\Apps\\Export\\DXF\202120000test3.pdf
+TPV4_hut_mat;202120000/01,3-0000 (Pohled);200178110;ks;Bearing tube;;;;;0.000000;2023-5-7 4:17:54;-;-
+TPV4_hut_mat;202120000/01,3-0000 (Pohled);200178141;ks;rocker arm holder lh weld.;;;;;0.000000;2023-5-13 23:28:37;C:\\SPLM\\Apps\\Export\\PDF\200178141test3.pdf;C:\\SPLM\\Apps\\Export\\DXF\200178141test3.pdf
+TPV4_hut_mat;200178141/01,1-2200 (Pohled);200178161;ks;rocker arm holder lh;;;;;0.000000;2023-5-7 4:17:54;-;-
+TPV4_hut_mat;200178141/01,1-2200 (Pohled);200178180;ks;Bushing with bore hole;;;;;0.000000;2023-5-7 4:17:54;-;-
+TPV4_hut_mat;200178141/01,1-2200 (Pohled);200178190;ks;Bushing;;;;;0.000000;2023-5-7 4:17:54;-;-
+TPV4_hut_mat;200178141/01,1-2200 (Pohled);2711284;ks;RUNDSTAHL RD 20 X 32;;;;;0.000000;2023-5-7 4:17:54;-;-
+TPV4_hut_mat;2711284/01,1-0020 (Pohled);99055601;ks;Rundstahl 20h9 x 6000;42;;;;0.000000;2023-5-7 4:17:54;-;-
+TPV4_hut_mat;200178141/01,1-2200 (Pohled);9040370;ks;Countersunk screw intern hexa M20 x 180;;;;;0.000000;2023-5-7 4:17:54;-;-
+TPV4_hut_mat;202120000/01,3-0000 (Pohled);200178260;ks;Bushing;2;;;;0.000000;2023-5-7 4:17:52;-;-
+TPV4_hut_mat;202120000/01,3-0000 (Pohled);200178270;ks;Lug cylinder holder;2;;;;0.000000;2023-5-7 4:17:52;-;-
+TPV4_hut_mat;202120000/01,3-0000 (Pohled);200178280;ks;Bushing with borehole d25;;;;;0.000000;2023-5-7 4:17:52;-;-
+TPV4_hut_mat;202120000/01,3-0000 (Pohled);200178290;ks;Bushing d25;;;;;0.000000;2023-5-7 4:17:52;-;-
+TPV4_hut_mat;202120000/01,3-0000 (Pohled);200178310;ks;Slug;;;;;0.000000;2023-5-9 0:4:50;-;-
+TPV4_hut_mat;200178310/01,1-2400 (Pohled);200178290;ks;Bushing d25;;;;;0.000000;2023-5-7 4:17:52;-;-
+TPV4_hut_mat;202120000/01,3-0000 (Pohled);200196980;ks;Mandril Rd 40;;;;;0.000000;2023-5-7 4:17:53;-;-
+TPV4_hut_mat;202120000/01,3-0000 (Pohled);200197120;ks;Support lubrication unit Bl 3;;;;;0.000000;2023-5-7 4:17:55;-;-
+TPV4_hut_mat;202120000/01,3-0000 (Pohled);200197130;ks;Line holder front Bl 2;;;;;0.000000;2023-5-7 4:17:55;-;-
+TPV4_hut_mat;202120000/01,3-0000 (Pohled);200197140;ks;Line holder inside Bl 2;;;;;0.000000;2023-5-7 4:17:55;-;-
+TPV4_hut_mat;202120000/01,3-0000 (Pohled);202104141;ks;Weld-on plate 58 x 42.4 (M8);3;;;;0.000000;2023-5-7 4:17:55;-;-
+TPV4_hut_mat;202120000/01,3-0000 (Pohled);202118370;ks;Cable holder;;;;;0.000000;2023-5-7 4:17:55;-;-
+TPV4_hut_mat;202120000/01,3-0000 (Pohled);202119830;ks;Vorderblech li. BM 10m;;;;;0.000000;2023-5-7 4:17:51;-;-
+TPV4_hut_mat;202120000/01,3-0000 (Pohled);202119850;ks;R�ckblech li. BM 10m;;;;;0.000000;2023-5-7 4:17:51;-;-
+TPV4_hut_mat;202120000/01,3-0000 (Pohled);202119870;ks;Unterblech li. BM 10m;;;;;0.000000;2023-5-7 4:17:51;-;-
+TPV4_hut_mat;202120000/01,3-0000 (Pohled);202119890;ks;Oberblech li. BM 10m;;;;;0.000000;2023-5-7 4:17:51;-;-
+TPV4_hut_mat;202120000/01,3-0000 (Pohled);202119920;ks;Tasche;;;;;0.000000;2023-5-7 4:17:52;-;-
+TPV4_hut_mat;202120000/01,3-0000 (Pohled);202119930;ks;Aufnahme Lenker aussen li.;;;;;0.000000;2023-5-7 4:17:52;-;-
+TPV4_hut_mat;202120000/01,3-0000 (Pohled);202119950;ks;Aufnahme Lenker innen li.;;;;;0.000000;2023-5-7 4:17:52;-;-
+TPV4_hut_mat;202120000/01,3-0000 (Pohled);202120020;ks;Anschlag li.;;;;;0.000000;2023-5-7 4:17:54;-;-
+TPV4_hut_mat;202120000/01,3-0000 (Pohled);202121770;ks;Bolzen 35 X 435;;;;;0.000000;2023-5-7 4:17:52;-;-
+TPV4_hut_mat;202120000/01,3-0000 (Pohled);202121780;ks;Bolzen 35 X 55;;;;;0.000000;2023-5-7 4:17:53;-;-
+TPV4_hut_mat;202120000/01,3-0000 (Pohled);202122170;ks;Oberblech li. un. BM 10m Bl 8;;;;;0.000000;2023-5-7 4:17:52;-;-
+TPV4_hut_mat;202120000/01,3-0000 (Pohled);202122190;ks;Aufnahme-Buchse li. vo. geschw;;;;;0.000000;2023-5-7 4:17:53;-;-
+TPV4_hut_mat;202122190/01,1-1900 (Pohled);200178120;ks;Bushing with bore hole;;;;;0.000000;2023-5-7 4:17:53;-;-
+TPV4_hut_mat;202122190/01,1-1900 (Pohled);202119910;ks;Verst�rkung mitte BM 10m;;;;;0.000000;2023-5-7 4:17:53;-;-
+TPV4_hut_mat;202122190/01,1-1900 (Pohled);202119970;ks;Deckblech li.;;;;;0.000000;2023-5-7 4:17:53;-;-
+TPV4_hut_mat;202122190/01,1-1900 (Pohled);202122210;ks;Verst�rkung Buchse 1 Bl 8;;;;;0.000000;2023-5-7 4:17:53;-;-
+TPV4_hut_mat;202120000/01,3-0000 (Pohled);202122230;ks;Aufnahme-Buchse li. hi. geschw;;;;;0.000000;2023-5-7 4:17:53;-;-
+TPV4_hut_mat;202122230/01,1-2000 (Pohled);200178130;ks;Bushing;;;;;0.000000;2023-5-7 4:17:54;-;-
+TPV4_hut_mat;202122230/01,1-2000 (Pohled);202122220;ks;Verst�rkung Buchse 2 Bl 8;;;;;0.000000;2023-5-7 4:17:53;-;-
+TPV4_hut_mat;202120000/01,3-0000 (Pohled);202122250;ks;Drehmomentknoten vo. Bl 6;;;;;0.000000;2023-5-7 4:17:55;-;-
+TPV4_hut_mat;202120000/01,3-0000 (Pohled);202122260;ks;Drehmomentknoten hi. Bl 12;;;;;0.000000;2023-5-7 4:17:55;-;-
+TPV4_hut_mat;202120000/01,3-0000 (Pohled);202122290;ks;Pufferst�tze Bl 8;;;;;0.000000;2023-5-7 4:17:52;-;-
+TPV4_hut_mat;202120000/01,3-0000 (Pohled);202122360;ks;Verst�rkung Bl 15;;;;;0.000000;2023-5-7 4:17:53;-;-
+TPV4_hut_mat;202120000/01,3-0000 (Pohled);202122430;ks;Pufferst�tze 2 Bl 12;;;;;0.000000;2023-5-7 4:17:55;-;-
+TPV4_hut_mat;202120000/01,3-0000 (Pohled);9090080;ks;Weld nut M10;2;;;;0.000000;2023-5-7 4:17:55;-;-
+TPV4_hut_mat;202120000/01,3-0000 (Pohled);9090150;ks;Weld nut M16;2;;;;0.000000;2023-5-7 4:17:55;-;-
+TPV4_hut_mat;202120000/01,3-0000 (Pohled);200178250;ks;Bushing with cross-hole;2;;;;0.000000;2023-5-7 4:17:52;-;-
