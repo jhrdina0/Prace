@@ -29,6 +29,9 @@
 #include <vector>
 #include <string>
 #include <tccore/uom.h>
+#include <ae\ae.h>
+#include <tccore\grm.h>
+
 
 #define TC_HANDLERS_DEBUG "TC_HANDLERS_DEBUG" 
 using vectorArray = std::vector<std::vector<std::string>>;
@@ -111,7 +114,11 @@ std::string convertDateToString(const date_t& date) {
     return dateString;
 }
 
-std::string readElement(PROP_value_type_t valtype, std::string property_name, tag_t Tag) {
+std::string readElement(tag_t Tag, std::string property_name) {
+    PROP_value_type_t valtype;
+    char* valtype_n;
+    AOM_ask_value_type(Tag, property_name.c_str(), &valtype, &valtype_n);
+    MEM_free(valtype_n);
     if (valtype == PROP_char) {
         char value;
         AOM_ask_value_char(Tag, property_name.c_str(), &value);
@@ -149,14 +156,11 @@ std::string readElement(PROP_value_type_t valtype, std::string property_name, ta
         return value;
     }
     else if (valtype == PROP_typed_reference) {
-        tag_t uom;
         tag_t value_tag;
-        char* name;
         char* value;
         AOM_ask_value_tag(Tag, property_name.c_str(), &value_tag);
         if (value_tag == 0) {
             return "ks";
-
         }
         else {
             AOM_ask_value_string(value_tag, "object_string", &value);
@@ -164,14 +168,11 @@ std::string readElement(PROP_value_type_t valtype, std::string property_name, ta
         }
     }
     else if (valtype == PROP_untyped_reference) {
-        tag_t uom;
         tag_t value_tag;
-        char* name;
         char* value;
         AOM_ask_value_tag(Tag, property_name.c_str(), &value_tag);
         if (value_tag == 0) {
             return "";
-
         }
         else {
             AOM_ask_value_string(value_tag, "object_string", &value);
@@ -182,7 +183,69 @@ std::string readElement(PROP_value_type_t valtype, std::string property_name, ta
     return "";
 }
 
-vectorArray RecursiveBOM(const std::string& InputAttrValues, const std::string& RevId, vectorArray csv, vectorArray config, bool addParent)
+std::vector<std::string> split(const std::string& s, char delim) {
+    std::vector<std::string> result;
+    std::stringstream ss(s);
+    std::string item;
+
+    while (getline(ss, item, delim)) {
+        result.push_back(item);
+    }
+
+    return result;
+}
+
+std::string ExportAttachments(tag_t ItemRev, std::string Values, std::string Path, std::string ItemId) {
+
+    std::vector<std::string> splittedValues = split(Values, ',');
+    std::string AttachType = splittedValues[0];
+    std::string Relation = splittedValues[1];
+
+    std::string cesta;
+
+    tag_t relationType;
+
+    GRM_find_relation_type(Relation.c_str(), &relationType);
+
+    int n_specs;
+    tag_t* specs;
+    char* type_name;
+    char* dataset_name;
+    GRM_list_secondary_objects_only(ItemRev, relationType, &n_specs, &specs);
+
+    for (int i = 0; i < n_specs; i++) {
+
+        tag_t type_tag;
+        char* type_name;
+        char* dataset_name;
+        TCTYPE_ask_object_type(specs[i], &type_tag);
+        TCTYPE_ask_name2(type_tag, &type_name);
+        AOM_ask_value_string(specs[i], "object_string", &dataset_name);
+
+        std::string s = type_name;
+        if (s == "PDF" and AttachType == "PDF") {
+            std::string s = dataset_name;
+            cesta = Path +"PDF\\"+ ItemId + s;
+            AE_export_named_ref(specs[i], "PDF_Reference", cesta.c_str());
+        }
+        if (s == "DXF" and AttachType == "DXF") {
+            std::string s = dataset_name;
+            cesta = Path + "DXF\\" + ItemId + s;
+            AE_export_named_ref(specs[i], "DXF", cesta.c_str());
+        }
+        MEM_free(dataset_name);
+        MEM_free(type_name);
+    }
+    if (n_specs == 0){
+        return "-";
+    }
+    else {
+        return cesta;
+    }
+
+}
+
+vectorArray RecursiveBOM(const std::string& InputAttrValues, const std::string& RevId, vectorArray csv, vectorArray config, bool addParent, std::string AttachPath)
 {
     int n_children;
     tag_t
@@ -200,14 +263,13 @@ vectorArray RecursiveBOM(const std::string& InputAttrValues, const std::string& 
 
     BOM_line_ask_child_lines(tBOMTopLine, &n_children, &children);
 
-    if (addParent){
+    if (addParent) {
         const std::string ParentId = InputAttrValues;
         char
             * ItemId,
             * RevId;
         tag_t Tag = tBOMTopLine;
         std::vector<std::string> csv_row;
-
 
         AOM_ask_value_string(tBOMTopLine, "bl_item_item_id", &ItemId);
         AOM_ask_value_string(tBOMTopLine, "bl_rev_item_revision_id", &RevId);
@@ -217,26 +279,24 @@ vectorArray RecursiveBOM(const std::string& InputAttrValues, const std::string& 
         ItemRev = ItemAndRev[1];
 
         for (int j = 0; j < config.size(); j++) {
+            std::string value;
             if (config[j][0] == "BOM") {
-                Tag = tBOMTopLine;
+                value = readElement(tBOMTopLine, config[j][1]);
             }
-            else if (config[j][0] == "Item") {
-                Tag = Item;
+            if (config[j][0] == "Item") {
+                value = readElement(Item, config[j][1]);
             }
-            else if (config[j][0] == "Rev") {
-                Tag = ItemRev;
+            if (config[j][0] == "Rev") {
+                value = readElement(ItemRev, config[j][1]);
+            }
+            if (config[j][0] == "Export") {
+                value = ExportAttachments(ItemRev, config[j][1], AttachPath, ItemId);
             }
 
-            PROP_value_type_t valtype;
-            char* valtype_n;
-            AOM_ask_value_type(Tag, config[j][1].c_str(), &valtype, &valtype_n);
-
-            std::string value = readElement(valtype, config[j][1], Tag);
+            //všechny ; symboly jsou nahrazeny , aby se nepoškodil formát csv
             std::replace(value.begin(), value.end(), ';', ',');
 
             csv_row.push_back(value);
-            MEM_free(valtype_n);
-
         }
 
         // push new row into the csv
@@ -248,53 +308,51 @@ vectorArray RecursiveBOM(const std::string& InputAttrValues, const std::string& 
 
     // Iterate over chlidren (if there are any) and call recursiveBOM function on them
     for (int i = 0; i < n_children; i++)
-        {
-            const std::string ParentId = InputAttrValues;
-            char
-                * ItemId,
-                * RevId;
-            tag_t Tag = children[i];
-            std::vector<std::string> csv_row;
+    {
+        const std::string ParentId = InputAttrValues;
+        char
+            * ItemId,
+            * RevId;
+        tag_t Tag = children[i];
+        std::vector<std::string> csv_row;
 
 
-            AOM_ask_value_string(children[i], "bl_item_item_id", &ItemId);
-            AOM_ask_value_string(children[i], "bl_rev_item_revision_id", &RevId);
+        AOM_ask_value_string(children[i], "bl_item_item_id", &ItemId);
+        AOM_ask_value_string(children[i], "bl_rev_item_revision_id", &RevId);
 
-            ItemAndRev = find_itemRevision(ItemId, RevId);
-            Item = ItemAndRev[0];
-            ItemRev = ItemAndRev[1];
+        ItemAndRev = find_itemRevision(ItemId, RevId);
+        Item = ItemAndRev[0];
+        ItemRev = ItemAndRev[1];
 
-            for (int j = 0; j < config.size(); j++) {
-                if (config[j][0] == "BOM") {
-                    Tag = children[i];
-                }
-                if (config[j][0] == "Item") {
-                    Tag = Item;
-                }
-                if (config[j][0] == "Rev") {
-                    Tag = ItemRev;
-                }
-
-                PROP_value_type_t valtype;
-                char* valtype_n;
-                AOM_ask_value_type(Tag, config[j][1].c_str(), &valtype, &valtype_n);
-
-                std::string value = readElement(valtype, config[j][1], Tag);
-                //všechny ; symboly jsou nahrazeny , aby se nepoškodil formát csv
-                std::replace(value.begin(), value.end(), ';', ',');
-
-                csv_row.push_back(value);
-                MEM_free(valtype_n);
+        for (int j = 0; j < config.size(); j++) {
+            std::string value;
+            if (config[j][0] == "BOM") {
+                value = readElement(children[i], config[j][1]);
+            }
+            if (config[j][0] == "Item") {
+                value = readElement(Item, config[j][1]);
+            }
+            if (config[j][0] == "Rev") {
+                value = readElement(ItemRev, config[j][1]);
+            }
+            if (config[j][0] == "Export") {
+                value = ExportAttachments(ItemRev, config[j][1], AttachPath, ItemId);
             }
 
-            // push new row into the csv
-            csv.push_back(csv_row);
+            //všechny ; symboly jsou nahrazeny , aby se nepoškodil formát csv
+            std::replace(value.begin(), value.end(), ';', ',');
 
-            csv = RecursiveBOM(ItemId, RevId, csv, config, false);
-
-            MEM_free(ItemId);
-            MEM_free(RevId);
+            csv_row.push_back(value);
         }
+
+        // push new row into the csv
+        csv.push_back(csv_row);
+
+        csv = RecursiveBOM(ItemId, RevId, csv, config, false, AttachPath);
+
+        MEM_free(ItemId);
+        MEM_free(RevId);
+    }
 
     MEM_free(children);
     BOM_save_window(window);
@@ -312,21 +370,20 @@ int createCSV(vectorArray csv, std::string exportFolderPath, vectorArray config,
     {
         file << config[j][1] << ";";
     }
-    file << "\n";
     for (int i = 0; i < csv.size(); i++) {
+        file << "\n";
         file << csv[i][0];
         for (int j = 1; j < csv[0].size(); j++) {
             file << ";";
             file << csv[i][j];
         }
-        file << "\n";
     }
-
     file.close();
     return 0;
 }
 
-vectorArray load_config(std::string configPath) {
+vectorArray load_config(std::string configPath) 
+{
     vectorArray config;
 
     // Open the file
@@ -359,13 +416,16 @@ vectorArray load_config(std::string configPath) {
     return config;
 }
 
-vectorArray get_config(EPM_action_message_t msg) 
-{   
+std::vector<std::string> read_properties(EPM_action_message_t msg)
+{
     char
         * Argument,
         * Flag,
         * Value;
-    vectorArray config;
+    std::string 
+        AttachPath,
+        config;
+    std::vector<std::string> props;
 
     int ArgumentCount = TC_number_of_arguments(msg.arguments);
 
@@ -375,20 +435,27 @@ vectorArray get_config(EPM_action_message_t msg)
         ITK_ask_argument_named_value(Argument, &Flag, &Value);
         if (strcmp("ConfigPath", Flag) == 0 && Value != nullptr)
         {
-            config = load_config(Value);
-
+            config = Value;
+        }
+        if (strcmp("ExportFolderPath", Flag) == 0 && Value != nullptr)
+        {
+            AttachPath = Value;
         }
         MEM_free(Flag);
         MEM_free(Value);
     }
+    props.push_back(config);
+    props.push_back(AttachPath);
 
-    return config;
+    return props;
 }
 
 int TPV_BOM2CSV_TC14(EPM_action_message_t msg)
 {
-    vectorArray csv;
-    vectorArray config;
+    vectorArray 
+        csv,
+        config;
+    std::string AttachPath;
 
     int n_attachments;
     char
@@ -400,7 +467,10 @@ int TPV_BOM2CSV_TC14(EPM_action_message_t msg)
         * attachments,
         class_tag;
 
-    config = get_config(msg);
+    std::vector<std::string> props = read_properties(msg);
+
+    config = load_config(props[0]);
+    AttachPath = props[1];
 
     std::string exportFolderPath = config[0][1];
     std::string itemType = config[1][1];
@@ -408,7 +478,7 @@ int TPV_BOM2CSV_TC14(EPM_action_message_t msg)
 
     EPM_ask_root_task(msg.task, &RootTask);
     EPM_ask_attachments(RootTask, EPM_target_attachment, &n_attachments, &attachments);
-          
+
     for (int i = 0; i < n_attachments; i++)
     {
 
@@ -423,7 +493,7 @@ int TPV_BOM2CSV_TC14(EPM_action_message_t msg)
             AOM_ask_value_string(attachments[i], "item_id", &ItemId);
             AOM_ask_value_string(attachments[i], "current_revision_id", &RevId);
 
-            csv = RecursiveBOM(ItemId, RevId, csv, config, true);
+            csv = RecursiveBOM(ItemId, RevId, csv, config, true, AttachPath);
 
             createCSV(csv, exportFolderPath, config, ItemId, RevId);
         }
