@@ -88,7 +88,7 @@ bool ItemExists(const std::string& itemId) {
 
 std::vector<tag_t> find_itemRevision(const std::string& InputAttrValues, const std::string& RevId) {
     std::vector<tag_t> ItemAndRev;
-    // Vyhled·nÌ poloûek
+    // Vyhled√°n√≠ polo≈æek
     const char* AttrNames[1] = { ITEM_ITEM_ID_PROP };
     const char* AttrValues[1] = { InputAttrValues.c_str() };
     int ItemsCount = 0;
@@ -101,7 +101,7 @@ std::vector<tag_t> find_itemRevision(const std::string& InputAttrValues, const s
     ITEM_find_revision(Items[0], RevId.c_str(), &Rev);
     ItemAndRev.push_back(Rev);
     MEM_free(Items);
-    //vr·tÌ tag revize Itemu
+    //vr√°t√≠ tag revize Itemu
     return ItemAndRev;
 }
 
@@ -111,10 +111,10 @@ std::vector<tag_t> create_item(std::string itemId, std::string itemName, std::st
 
     if (not ItemExists(itemId)) {
         if (itemType == "D") {
-            druhItemu = "TPV4_zmena";
+            druhItemu = "TPV4_Vyrobek";
         }
         else if(itemType == "M") {
-            druhItemu = "Item";
+            druhItemu = "TPV4_nak_dil";
         }
         else {
             druhItemu = "Item";
@@ -135,18 +135,18 @@ std::vector<tag_t> create_item(std::string itemId, std::string itemName, std::st
         int ReturnCode = TCTYPE_create_object(create_input, &bo);
 
         // najde UOM tag podle symbolu
-        // pokud symbol nenÌ nalezen, UOM z˘stane na defaultnÌ hodnotÏ (each)
+        // pokud symbol nen√≠ nalezen, UOM z≈Østane na defaultn√≠ hodnotƒõ (each)
         UOM_find_by_symbol(uom.c_str(), &uom_tag);
         ITEM_set_unit_of_measure(bo, uom_tag);
         if (ReturnCode != ITK_ok) {
-            ECHO(("Vytvo¯enÌ poloûky selhalo ERROR CODE: %d\n", ReturnCode));
+            ECHO(("Vytvo≈ôen√≠ polo≈æky selhalo ERROR CODE: %d\n", ReturnCode));
         }
 
         AOM_save_without_extensions(bo);
 
         //std::string druhItemu;
         //int ReturnCode = ITEM_create_item(itemId.c_str(), itemName.c_str(), "TPV4_dilec", 0, &Item, &Rev);
-        //ECHO(("Item vytvo¯en: %s\n.", itemId.c_str()));
+        //ECHO(("Item vytvo≈ôen: %s\n.", itemId.c_str()));
         //if (ReturnCode == ITK_ok)
         //{
         //    ITEM_save_item(Item);
@@ -165,14 +165,14 @@ std::vector<tag_t> create_item(std::string itemId, std::string itemName, std::st
 }
 
 tag_t* find_item(const std::string& InputAttrValues) {
-    // Vyhled·nÌ poloûek
+    // Vyhled√°n√≠ polo≈æek
     const char* AttrNames[1] = { ITEM_ITEM_ID_PROP };
     const char* AttrValues[1] = { InputAttrValues.c_str() };
     int ItemsCount = 0;
     tag_t* Items;
     ITEM_find_items_by_key_attributes(1, AttrNames, AttrValues, &ItemsCount, &Items);
 
-    //vr·tÌ tagy Item˘
+    //vr√°t√≠ tagy Item≈Ø
     return Items;
 }
 
@@ -189,7 +189,7 @@ std::vector<std::string> splitString(const std::string& line, char delimiter) {
 }
 
 vectorArray readCSV(const std::string& filename) {
-    // funkce na nahr·nÌ csv souboru do "2D listu" 
+    // funkce na nahr√°n√≠ csv souboru do "2D listu" 
     std::vector<std::vector<std::string>> data;
     std::ifstream file(filename);
     std::string line;
@@ -282,7 +282,7 @@ int TPV_CSV2BOM_TC14(EPM_action_message_t msg)
         RootTask,
         * attachments,
         class_tag;
-    std::string csvPath = "C:\\Users\\infodba\\Desktop\\TPV_CSV2BOM_TCtemp.csv";
+    std::string csvPath = "C:\\ProgramData\\TPV_CSV2BOM_TCtemp.csv";
     bool exportSucces = false;
 
     EPM_ask_root_task(msg.task, &RootTask);
@@ -317,7 +317,7 @@ int TPV_CSV2BOM_TC14(EPM_action_message_t msg)
     std::string user;
     std::string userGroup;
 
-    // Vytvo¯enÌ poloûky
+    // Vytvo≈ôen√≠ polo≈æky
     tag_t Item = NULLTAG;
     tag_t Rev = NULLTAG;
 
@@ -338,24 +338,24 @@ int TPV_CSV2BOM_TC14(EPM_action_message_t msg)
     geschw.
     10
     meter;;;;;
-    ®*/
+    ¬®*/
     
 
-    // Je pot¯eba zmÏnit
-    // 1. poloûka se vytv·¯Ì mimo for loop a vytvo¯Ì se na nÌ BOM view vûdy
+    // Je pot≈ôeba zmƒõnit
+    // 1. polo≈æka se vytv√°≈ô√≠ mimo for loop a vytvo≈ô√≠ se na n√≠ BOM view v≈ædy
 
-    // vytvo¯ vrcholov˝ item
+    // vytvo≈ô vrcholov√Ω item
     std::vector<tag_t> Tags = create_item(Karta[2], nazevKarty, "D", "ks");
     Item = Tags[0];
     Rev = Tags[1];
 
-    // kontrola zda Bom View jiû existuje
+    // kontrola zda Bom View ji≈æ existuje
     int bvr_count;
     tag_t* bvrs;
     ITEM_rev_list_all_bom_view_revs(Rev, &bvr_count, &bvrs);
 
     if (bvr_count == 0) {
-        // Vytvo¯enÌ vrcholovÈ BomView
+        // Vytvo≈ôen√≠ vrcholov√© BomView
         tag_t BomView = NULLTAG;
         AOM_lock(Item);
         PS_create_bom_view(BomView, NULL, NULL, Item, &BomView);
@@ -366,7 +366,7 @@ int TPV_CSV2BOM_TC14(EPM_action_message_t msg)
         tag_t BomViewType = NULLTAG;
         PS_ask_default_view_type(&BomViewType);
 
-        // Vytvo¯enÌ BomView Revision
+        // Vytvo≈ôen√≠ BomView Revision
         tag_t BomViewRev = NULLTAG;
         AOM_lock(Rev);
         PS_create_bvr(BomView, NULL, NULL, true, Rev, &BomViewRev);
@@ -377,29 +377,29 @@ int TPV_CSV2BOM_TC14(EPM_action_message_t msg)
     ITEM_rev_list_all_bom_view_revs(Rev, &bvr_count, &bvrs);
     tag_t BomViewRev = bvrs[0];
 
-    // for loop pro kaûdou poloûku v csv file, p¯edpokl·d· se ûe vöechny n·sledujÌcÌ poloûky majÌ ID, Name a Description ve sloupcÌch [2],[3] a [1]
+    // for loop pro ka≈ædou polo≈æku v csv file, p≈ôedpokl√°d√° se ≈æe v≈°echny n√°sleduj√≠c√≠ polo≈æky maj√≠ ID, Name a Description ve sloupc√≠ch [2],[3] a [1]
     for (int i = 3; i < rows; i++) {
         std::vector<tag_t> Tags = create_item(csvData[i][2], csvData[i][3], csvData[i][1], csvData[i][5]);
         tag_t Item = Tags[0];
         tag_t Rev = Tags[1];
 
-        // p¯edpokl·d· se ûe level je uveden ve sloupci [0] a je ve form·tu 1.,2..,3...,4....,
-        // kod by nefungoval v p¯ÌpadÏ ûe by byl level vyööÌ neû 9
+        // p≈ôedpokl√°d√° se ≈æe level je uveden ve sloupci [0] a je ve form√°tu 1.,2..,3...,4....,
+        // kod by nefungoval v p≈ô√≠padƒõ ≈æe by byl level vy≈°≈°√≠ ne≈æ 9
         int origLevel = (csvData[i][0][0]) - 48;
         int goalLevel = origLevel - 1;
         if (goalLevel < 1) {
             goalLevel = 1;
         }
         int currentItem = i;
-        // while loop kter˝ se opakuje dokuÔ nenalezne poloûku, kter· m· o 1 niûöÌ level neû ona samotn·
-        // n·slednÏ na poloûce vytvo¯Ì BOM view (pokuÔ jiû neexistuje)
+        // while loop kter√Ω se opakuje dokuƒè nenalezne polo≈æku, kter√° m√° o 1 ni≈æ≈°√≠ level ne≈æ ona samotn√°
+        // n√°slednƒõ na polo≈æce vytvo≈ô√≠ BOM view (pokuƒè ji≈æ neexistuje)
         while (true) {
             int level = (csvData[currentItem][0][0]) - 48;
             if (level == goalLevel) {
                 if (origLevel == 1) {
                     tag_t* Occurrences;
                     AOM_lock(BomViewRev);
-                    // p¯edpokl·d· se, ûe poËet poloûek je ve sloupci [4]
+                    // p≈ôedpokl√°d√° se, ≈æe poƒçet polo≈æek je ve sloupci [4]
                     PS_create_occurrences(BomViewRev, Rev, NULLTAG, std::stoi(csvData[i][4]), &Occurrences);
                     AOM_save_without_extensions(BomViewRev);
                     MEM_free(Occurrences);
@@ -410,13 +410,13 @@ int TPV_CSV2BOM_TC14(EPM_action_message_t msg)
                     tag_t* ParentRev;
                     ITEM_find_revisions(Parent[0], "*", &RevCount, &ParentRev);
 
-                    // kontrola zda Bom View jiû existuje
+                    // kontrola zda Bom View ji≈æ existuje
                     int bvr_count;
                     tag_t* bvrs;
                     ITEM_rev_list_all_bom_view_revs(ParentRev[0], &bvr_count, &bvrs);
 
                     if (bvr_count == 0) {
-                        // Vytvo¯enÌ BomView
+                        // Vytvo≈ôen√≠ BomView
                         tag_t BomView = NULLTAG;
                         AOM_lock(Parent[0]);
                         PS_create_bom_view(BomView, NULL, NULL, Parent[0], &BomView);
@@ -428,7 +428,7 @@ int TPV_CSV2BOM_TC14(EPM_action_message_t msg)
                         tag_t BomViewType = NULLTAG;
                         PS_ask_default_view_type(&BomViewType);
 
-                        // Vytvo¯enÌ BomView Revision
+                        // Vytvo≈ôen√≠ BomView Revision
                         tag_t SubBomViewRev = NULLTAG;
                         AOM_lock(ParentRev[0]);
                         PS_create_bvr(BomView, NULL, NULL, true, ParentRev[0], &SubBomViewRev);
@@ -441,7 +441,7 @@ int TPV_CSV2BOM_TC14(EPM_action_message_t msg)
 
                     tag_t* Occurrences;
                     AOM_lock(bvrs[0]);
-                    // p¯edpokl·d· se, ûe poËet poloûek je ve sloupci [4]
+                    // p≈ôedpokl√°d√° se, ≈æe poƒçet polo≈æek je ve sloupci [4]
                     PS_create_occurrences(bvrs[0], Rev, NULLTAG, std::stoi(csvData[i][4]), &Occurrences);
                     AOM_save_without_extensions(bvrs[0]);
 
