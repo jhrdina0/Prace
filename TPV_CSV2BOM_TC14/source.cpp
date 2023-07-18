@@ -111,16 +111,17 @@ std::vector<tag_t> create_item(std::string itemId, std::string itemName, std::st
 
     if (not ItemExists(itemId)) {
         if (itemType == "D") {
+            //druhItemu = "Item";
             druhItemu = "TPV4_Vyrobek";
         }
         else if(itemType == "M") {
+            //druhItemu = "Item";
             druhItemu = "TPV4_nak_dil";
         }
         else {
             druhItemu = "Item";
         }
-
-        ECHO(("druh Itemu: %s\n", druhItemu.c_str()));
+        ECHO(("Vytvoření itemu %s\n", druhItemu.c_str()));
 
         tag_t itemType,
             create_input,
@@ -138,9 +139,9 @@ std::vector<tag_t> create_item(std::string itemId, std::string itemName, std::st
         // pokud symbol není nalezen, UOM zůstane na defaultní hodnotě (each)
         UOM_find_by_symbol(uom.c_str(), &uom_tag);
         ITEM_set_unit_of_measure(bo, uom_tag);
-        if (ReturnCode != ITK_ok) {
-            ECHO(("Vytvoření položky selhalo ERROR CODE: %d\n", ReturnCode));
-        }
+        //if (ReturnCode != ITK_ok) {
+        //    ECHO(("Vytvoření položky selhalo ERROR CODE: %d\n", ReturnCode));
+        //}
 
         AOM_save_without_extensions(bo);
 
@@ -158,6 +159,9 @@ std::vector<tag_t> create_item(std::string itemId, std::string itemName, std::st
         //}
         //else
         //    ECHO(("Failed to create item. \n"));
+    }
+    else {
+        ECHO(("Item %s již existuje\n", druhItemu.c_str()));
     }
     Tags = find_itemRevision(itemId, "*");
     //returns Item and ItemRevision Tag
@@ -275,13 +279,17 @@ std::string connectStrings(const std::vector<std::string>& strings, const std::s
 
 int TPV_CSV2BOM_TC14(EPM_action_message_t msg)
 {
-    int n_attachments;
+    int n_attachments,
+        repeats;
     char
         * class_name;
     tag_t
         RootTask,
         * attachments,
-        class_tag;
+        class_tag,
+        window,
+        tBOMTopLine;
+
     std::string csvPath = "C:\\ProgramData\\TPV_CSV2BOM_TCtemp.csv";
     bool exportSucces = false;
 
@@ -303,7 +311,7 @@ int TPV_CSV2BOM_TC14(EPM_action_message_t msg)
             exportSucces = true;
         }
 
-        ECHO(("class_name: %s \n",class_name));
+        ECHO(("class_name: %s \n", class_name));
 
 
     }
@@ -318,8 +326,8 @@ int TPV_CSV2BOM_TC14(EPM_action_message_t msg)
     std::string userGroup;
 
     // Vytvoření položky
-    tag_t Item = NULLTAG;
-    tag_t Rev = NULLTAG;
+    tag_t OrigItem = NULLTAG;
+    tag_t OrigRev = NULLTAG;
 
     vectorArray csvData = readCSV(csvPath);
     int rows = csvData.size();
@@ -339,28 +347,28 @@ int TPV_CSV2BOM_TC14(EPM_action_message_t msg)
     10
     meter;;;;;
     ¨*/
-    
+
 
     // Je potřeba změnit
-    // 1. položka se vytváří mimo for loop a vytvoří se na ní BOM view vždy
+    // 1. položka se vytváří mimo for loop a vytvoří se na ní BOM view, pokud již neexistuje
 
     // vytvoř vrcholový item
     std::vector<tag_t> Tags = create_item(Karta[2], nazevKarty, "D", "ks");
-    Item = Tags[0];
-    Rev = Tags[1];
+    OrigItem = Tags[0];
+    OrigRev = Tags[1];
 
     // kontrola zda Bom View již existuje
     int bvr_count;
     tag_t* bvrs;
-    ITEM_rev_list_all_bom_view_revs(Rev, &bvr_count, &bvrs);
+    ITEM_rev_list_all_bom_view_revs(OrigRev, &bvr_count, &bvrs);
 
     if (bvr_count == 0) {
         // Vytvoření vrcholové BomView
         tag_t BomView = NULLTAG;
-        AOM_lock(Item);
-        PS_create_bom_view(BomView, NULL, NULL, Item, &BomView);
+        AOM_lock(OrigItem);
+        PS_create_bom_view(BomView, NULL, NULL, OrigItem, &BomView);
         AOM_save_without_extensions(BomView);
-        ITEM_save_item(Item);
+        ITEM_save_item(OrigItem);
 
         // BomView Type
         tag_t BomViewType = NULLTAG;
@@ -368,20 +376,26 @@ int TPV_CSV2BOM_TC14(EPM_action_message_t msg)
 
         // Vytvoření BomView Revision
         tag_t BomViewRev = NULLTAG;
-        AOM_lock(Rev);
-        PS_create_bvr(BomView, NULL, NULL, true, Rev, &BomViewRev);
+        AOM_lock(OrigRev);
+        PS_create_bvr(BomView, NULL, NULL, true, OrigRev, &BomViewRev);
         AOM_save_without_extensions(BomViewRev);
-        AOM_save_without_extensions(Rev);
+        AOM_save_without_extensions(OrigRev);
+    }
+    else {
+        ECHO(("Tato Karta Již existuje.\n"));
+        return 0;
     }
 
-    ITEM_rev_list_all_bom_view_revs(Rev, &bvr_count, &bvrs);
+    ITEM_rev_list_all_bom_view_revs(OrigRev, &bvr_count, &bvrs);
     tag_t BomViewRev = bvrs[0];
+    std::vector<int> levels(10, 0);
 
-    // for loop pro každou položku v csv file, předpokládá se že všechny následující položky mají ID, Name a Description ve sloupcích [2],[3] a [1]
+    // for loop pro každou položku v csv file, předpokládá se že všechny následující položky mají ID, Name, type a UOM ve sloupcích [2],[3],[1] a [5]
     for (int i = 3; i < rows; i++) {
         std::vector<tag_t> Tags = create_item(csvData[i][2], csvData[i][3], csvData[i][1], csvData[i][5]);
         tag_t Item = Tags[0];
         tag_t Rev = Tags[1];
+        repeats = 0;
 
         // předpokládá se že level je uveden ve sloupci [0] a je ve formátu 1.,2..,3...,4....,
         // kod by nefungoval v případě že by byl level vyšší než 9
@@ -391,6 +405,8 @@ int TPV_CSV2BOM_TC14(EPM_action_message_t msg)
             goalLevel = 1;
         }
         int currentItem = i;
+        int n_children;
+        tag_t* children;
         // while loop který se opakuje dokuď nenalezne položku, která má o 1 nižší level než ona samotná
         // následně na položce vytvoří BOM view (pokuď již neexistuje)
         while (true) {
@@ -400,9 +416,22 @@ int TPV_CSV2BOM_TC14(EPM_action_message_t msg)
                     tag_t* Occurrences;
                     AOM_lock(BomViewRev);
                     // předpokládá se, že počet položek je ve sloupci [4]
-                    PS_create_occurrences(BomViewRev, Rev, NULLTAG, std::stoi(csvData[i][4]), &Occurrences);
+
+                    PS_create_occurrences(BomViewRev, Rev, NULLTAG, 1, &Occurrences);
                     AOM_save_without_extensions(BomViewRev);
+                    
+                    levels[origLevel] += 10;
+                    BOM_create_window(&window);
+                    BOM_set_window_top_line(window, NULLTAG, OrigRev, NULLTAG, &tBOMTopLine);
+                    BOM_line_ask_child_lines(tBOMTopLine, &n_children, &children);
+
+                    ECHO(("bl_sequence_no: %d, repeats: %d n_children: %d last children: %d\n", levels[origLevel], repeats, n_children, children[0]));
+                    
+                    AOM_UIF_set_value(children[0], "bl_quantity", csvData[i][4].c_str());
+                    AOM_UIF_set_value(children[0], "bl_sequence_no", std::to_string(levels[origLevel]).c_str());
+                    
                     MEM_free(Occurrences);
+                    MEM_free(children);
                 }
                 else {
                     tag_t* Parent = find_item(csvData[currentItem][2]);
@@ -442,8 +471,23 @@ int TPV_CSV2BOM_TC14(EPM_action_message_t msg)
                     tag_t* Occurrences;
                     AOM_lock(bvrs[0]);
                     // předpokládá se, že počet položek je ve sloupci [4]
-                    PS_create_occurrences(bvrs[0], Rev, NULLTAG, std::stoi(csvData[i][4]), &Occurrences);
+
+                    PS_create_occurrences(bvrs[0], Rev, NULLTAG, 1, &Occurrences);
+                    if (repeats == 1) {
+                        levels[origLevel] = 0;
+                    }
                     AOM_save_without_extensions(bvrs[0]);
+                    levels[origLevel] += 10;
+                    BOM_create_window(&window);
+                    BOM_set_window_top_line(window, NULLTAG, ParentRev[0], NULLTAG, &tBOMTopLine);
+                    BOM_line_ask_child_lines(tBOMTopLine, &n_children, &children);
+                    if (n_children != 0) {
+                        ECHO(("bl_sequence_no: %d, repeats: %d n_children: %d last children: %d\n", levels[origLevel], repeats, n_children, children[0]));
+
+                        AOM_UIF_set_value(children[0], "bl_quantity", csvData[i][4].c_str());
+                        AOM_UIF_set_value(children[0], "bl_sequence_no", std::to_string(levels[origLevel]).c_str());
+
+                    }
 
                     MEM_free(Parent);
                     MEM_free(bvrs);
@@ -454,6 +498,7 @@ int TPV_CSV2BOM_TC14(EPM_action_message_t msg)
             }
             else {
                 currentItem -= 1;
+                repeats += 1;
             }
         }
     }
