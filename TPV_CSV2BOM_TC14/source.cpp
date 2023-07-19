@@ -418,7 +418,6 @@ int TPV_CSV2BOM_TC14(EPM_action_message_t msg)
                     // předpokládá se, že počet položek je ve sloupci [4]
 
                     PS_create_occurrences(BomViewRev, Rev, NULLTAG, 1, &Occurrences);
-                    AOM_save_without_extensions(BomViewRev);
                     
                     levels[origLevel] += 10;
                     BOM_create_window(&window);
@@ -430,6 +429,7 @@ int TPV_CSV2BOM_TC14(EPM_action_message_t msg)
                     AOM_UIF_set_value(children[0], "bl_quantity", csvData[i][4].c_str());
                     AOM_UIF_set_value(children[0], "bl_sequence_no", std::to_string(levels[origLevel]).c_str());
                     
+                    AOM_save_without_extensions(BomViewRev);
                     MEM_free(Occurrences);
                     MEM_free(children);
                 }
@@ -476,7 +476,7 @@ int TPV_CSV2BOM_TC14(EPM_action_message_t msg)
                     if (repeats == 1) {
                         levels[origLevel] = 0;
                     }
-                    AOM_save_without_extensions(bvrs[0]);
+
                     levels[origLevel] += 10;
                     BOM_create_window(&window);
                     BOM_set_window_top_line(window, NULLTAG, ParentRev[0], NULLTAG, &tBOMTopLine);
@@ -488,6 +488,7 @@ int TPV_CSV2BOM_TC14(EPM_action_message_t msg)
                         AOM_UIF_set_value(children[0], "bl_sequence_no", std::to_string(levels[origLevel]).c_str());
 
                     }
+                    AOM_save_without_extensions(bvrs[0]);
 
                     MEM_free(Parent);
                     MEM_free(bvrs);
