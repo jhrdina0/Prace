@@ -34,6 +34,7 @@
 #include <random>
 #include <ps/ps.h>
 #include <bom/bom.h>
+#include <cstdlib>
 
 
 #define TC_HANDLERS_DEBUG "TC_HANDLERS_DEBUG" 
@@ -73,7 +74,7 @@ extern "C" DLLAPI int TPV_seradBOM_TC12_init_module(int* decision, va_list args)
 
 std::vector<tag_t> find_itemRevision(const std::string& InputAttrValues, const std::string& RevId) {
     std::vector<tag_t> ItemAndRev;
-    // Vyhled�n� polo�ek
+    // Vyhledání položek
     const char* AttrNames[1] = { ITEM_ITEM_ID_PROP };
     const char* AttrValues[1] = { InputAttrValues.c_str() };
     int ItemsCount = 0;
@@ -86,7 +87,7 @@ std::vector<tag_t> find_itemRevision(const std::string& InputAttrValues, const s
     ITEM_find_revision(Items[0], RevId.c_str(), &Rev);
     ItemAndRev.push_back(Rev);
     MEM_free(Items);
-    //vr�t� tag revize Itemu
+    //vrátí tag revize Itemu
     return ItemAndRev;
 }
 
@@ -206,6 +207,21 @@ std::vector<std::string> split(const std::string& s, char delim) {
     return result;
 }
 
+double convertToDouble(const char* str) {
+    char* endPtr;
+    double result = std::strtod(str, &endPtr);
+
+    // If the conversion fails, endPtr will point to the same location as str
+    // This indicates an invalid conversion (e.g., an empty string, non-numeric characters)
+    if (endPtr == str) {
+        // Handle the error or return an appropriate value (e.g., 0.0)
+        // For simplicity, I'm returning 0.0 here
+        return 0.0;
+    }
+
+    return result;
+}
+
 int RecursiveBOM(const std::string& InputAttrValues, const std::string& RevId)
 {
     int n_children;
@@ -218,12 +234,14 @@ int RecursiveBOM(const std::string& InputAttrValues, const std::string& RevId)
     tag_t Item = ItemAndRev[0];
     tag_t ItemRev = ItemAndRev[1];
 
+    ECHO(("ItemTag: %d Current Revision Tag: %d\n", Item, ItemRev));
+
     BOM_create_window(&window);
     BOM_set_window_top_line(window, NULLTAG, ItemRev, NULLTAG, &tBOMTopLine);
     BOM_line_ask_child_lines(tBOMTopLine, &n_children, &children);
 
+    ECHO(("Počet children: %d\n", n_children));
     variablesArray ListHodnot;
-
     // Iterate over chlidren (if there are any) and call recursiveBOM function on them
     for (int i = 0; i < n_children; i++)
     {
@@ -246,26 +264,84 @@ int RecursiveBOM(const std::string& InputAttrValues, const std::string& RevId)
         Item = ItemAndRev[0];
         ItemRev = ItemAndRev[1];
 
-        int return_code = AOM_ask_value_string(ItemRev, "tpv4_ma4PartType", &kodPuvoduStr);
+        int n_ifails;
+        const int* severities;
+        const int* ifails;
+        const char** texts;
+
+        char* testError;
+        
+        // Test Jestli výpis errorů funguje správně
+
+        //int return_code = AOM_ask_value_string(ItemRev, "testError", &testError);
+        //if (return_code != ITK_ok) {
+        //    EMH_ask_errors(&n_ifails, &severities, &ifails, &texts);
+        //    ECHO(("n_ifails: %d", n_ifails));
+        //    for (int i = 0; i < n_ifails; i++) {
+        //        ECHO(("ERROR: %s\n", texts[i]));
+        //    }
+        //}
+
+        ECHO(("Item TAG: %d ItemRevision TAG: %d\n", Item, ItemRev));
+
+        int return_code = AOM_ask_value_string(children[i], "bl_MA4DesignPartRevision_ma4PartType", &kodPuvoduStr);
         if (return_code != ITK_ok) {
-
+            EMH_ask_errors(&n_ifails, &severities, &ifails, &texts);
+            for (int i = 0; i < n_ifails; i++) {
+                ECHO(("n_ifails: %d\n", n_ifails));
+                ECHO(("ERROR: %s\n", texts[i]));
+            }
         }
-        return_code = AOM_ask_value_string(ItemRev, "tpv4_hmotnost", &hmotnostStr);
+        return_code = AOM_ask_value_string(children[i], "bl_MA4DesignPartRevision_ma4Weight", &hmotnostStr);
         if (return_code != ITK_ok) {
-    
+            EMH_ask_errors(&n_ifails, &severities, &ifails, &texts);
+            for (int i = 0; i < n_ifails; i++) {
+                ECHO(("n_ifails: %d\n", n_ifails));
+                ECHO(("ERROR: %s\n", texts[i]));
+            }
         }
-        std::string kodPuvoduStr1 = kodPuvoduStr;
-        std::string hmotnostStr1 = hmotnostStr;
+
+        int length = strlen(hmotnostStr);
+        char* hmotnostFinal;
+
+        // Check if the length is greater than 13
+        if (length > 13) {
+            char truncHmotnost[14]; // Nový string
+            strncpy_s(truncHmotnost, hmotnostStr, 13); // Zkopíruj první 13 charakterů
+            truncHmotnost[13] = '\0';
+            hmotnostFinal = truncHmotnost;
+        }
+        else {
+            hmotnostFinal = hmotnostStr;
+        }
+
+        std::string a, b, c, d;
+
+        a = ItemId;
+        b = kodPuvoduStr;
+        c = hmotnostStr;
+        d = RevId;
+
+        ECHO(("ItemID: %s, RevId: %s, ma4PartType: %s, ma4Weight %s\n", a, d, b, c));
+
+        if (hmotnostFinal == nullptr || strlen(hmotnostFinal) == 0) {
+            // If empty, allocate memory for the "0" string and copy it to hmotnost
+            // Don't forget to free the memory later to avoid memory leaks
+            char* newString = new char[2]; // "0" + null terminator
+            strcpy_s(newString, 2, "0");
+            hmotnostFinal = newString;
+        }
 
 
-        kodPuvodu = stod(kodPuvoduStr1);
-
-        hmotnost = stod(hmotnostStr1);
+        ECHO(("Následuje převod na double...\n"));
+        kodPuvodu = convertToDouble(kodPuvoduStr);
+        hmotnost = convertToDouble(hmotnostStr);
 
         row.first = children[i];
         row.second.first = kodPuvodu;
         row.second.second = hmotnost;
 
+        ECHO(("Předání parametrů do listu hodnot...\n"));
         ListHodnot.push_back(row);
 
         // push new row into the csv
@@ -279,22 +355,25 @@ int RecursiveBOM(const std::string& InputAttrValues, const std::string& RevId)
     }
     if (n_children > 0) {
 
+        ECHO(("\n řazení Itemů podle kodu puvodu a hmotnosti...\n"));
+
         std::sort(ListHodnot.begin(), ListHodnot.end(), [](const auto& a, const auto& b) {
             if (a.second.first != b.second.first)
                 return a.second.first < b.second.first;
-            return a.second.second < b.second.second;
+            return a.second.second > b.second.second; // > descending, < ascending
             });
 
-        ECHO(("\n***********ITEM CHILDREN***************\n"));
+        ECHO(("\n***********ITEM CHILDREN SEŘAZENO***************\n"));
 
         int bl_sequence_no = 0;
         for (const auto& item : ListHodnot) {
-            bl_sequence_no += 10;
+            bl_sequence_no += 1;
             ECHO(("%d Tag: %d, KodPuvodu: %f, Hmotnost: %f\n", bl_sequence_no, item.first, item.second.first, item.second.second));
             int AttributeId;
             BOM_line_look_up_attribute("bl_sequence_no", &AttributeId);
             BOM_line_set_attribute_string(item.first, AttributeId, std::to_string(bl_sequence_no).c_str());
         }
+        ECHO(("\n pokračování na další...\n"));
         
         //for (int i = 0; i = ListHodnot.size(); i++) {
         //    ECHO(("Tag: %d, KodPuvodu: %f, Hmotnost: %f\n", ListHodnot[i].first, ListHodnot[i].second.first, ListHodnot[i].second.second));
@@ -424,6 +503,9 @@ int TPV_seradBOM_TC12(EPM_action_message_t msg)
         {
             AOM_ask_value_string(attachments[i], "item_id", &ItemId);
             AOM_ask_value_string(attachments[i], "current_revision_id", &RevId);
+            std::string a = ItemId;
+            std::string b = RevId;
+            ECHO(("ItemID: %s Current Revision ID: %s\n", a, b));
 
             RecursiveBOM(ItemId, RevId);
 
