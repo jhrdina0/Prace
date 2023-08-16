@@ -75,7 +75,7 @@ extern "C" DLLAPI int TPV_seradBOM_TC12_init_module(int* decision, va_list args)
 
 std::vector<tag_t> find_itemRevision(const std::string& InputAttrValues, const std::string& RevId) {
     std::vector<tag_t> ItemAndRev;
-    // Vyhled·nÌ poloûek
+    // Vyhled√°n√≠ polo≈æek
     const char* AttrNames[1] = { ITEM_ITEM_ID_PROP };
     const char* AttrValues[1] = { InputAttrValues.c_str() };
     int ItemsCount = 0;
@@ -88,7 +88,7 @@ std::vector<tag_t> find_itemRevision(const std::string& InputAttrValues, const s
     ITEM_find_revision(Items[0], RevId.c_str(), &Rev);
     ItemAndRev.push_back(Rev);
     MEM_free(Items);
-    //vr·tÌ tag revize Itemu
+    //vr√°t√≠ tag revize Itemu
     return ItemAndRev;
 }
 
@@ -278,7 +278,7 @@ int RecursiveBOM(const std::string& InputAttrValues, const std::string& RevId)
     BOM_set_window_top_line(window, NULLTAG, ItemRev, NULLTAG, &tBOMTopLine);
     BOM_line_ask_child_lines(tBOMTopLine, &n_children, &children);
 
-    ECHO(("PoËet children: %d\n", n_children));
+    ECHO(("Poƒçet children: %d\n", n_children));
     variablesArray ListHodnot;
     // Iterate over chlidren (if there are any) and call recursiveBOM function on them
     for (int i = 0; i < n_children; i++)
@@ -308,7 +308,7 @@ int RecursiveBOM(const std::string& InputAttrValues, const std::string& RevId)
         const char** texts;
 
 
-        // Test Jestli v˝pis error˘ funguje spr·vnÏ
+        // Test Jestli v√Ωpis error≈Ø funguje spr√°vnƒõ
 
         //char* testError;
         //int return_code = AOM_ask_value_string(ItemRev, "testError", &testError);
@@ -363,8 +363,8 @@ int RecursiveBOM(const std::string& InputAttrValues, const std::string& RevId)
 
             // Check if the length is greater than 13
             if (length > 13) {
-                char truncHmotnost[14]; // Nov˝ string
-                strncpy_s(truncHmotnost, hmotnostStr, 13); // ZkopÌruj prvnÌ 13 charakter˘
+                char truncHmotnost[14]; // Nov√Ω string
+                strncpy_s(truncHmotnost, hmotnostStr, 13); // Zkop√≠ruj prvn√≠ 13 charakter≈Ø
                 truncHmotnost[13] = '\0';
                 hmotnostFinal = truncHmotnost;
             }
@@ -428,7 +428,7 @@ int RecursiveBOM(const std::string& InputAttrValues, const std::string& RevId)
             return a.second.second > b.second.second; // > descending, < ascending
             });
 
-        ECHO(("\n***********ITEM CHILDREN SEÿAZENO***************\n"));
+        ECHO(("\n***********ITEM CHILDREN SE≈òAZENO***************\n"));
 
         int bl_sequence_no = 0;
         for (const auto& item : ListHodnot) {
@@ -555,6 +555,12 @@ int TPV_seradBOM_TC12(EPM_action_message_t msg)
 
     std::string itemType = read_properties(msg);
 
+    double hmotnostDouble,
+        hmotnost;
+    char* hmotnostStr;
+    std::vector<tag_t> ItemAndRev;
+    tag_t rev;
+
     ECHO(("\n**************zacatek seradBOM workflow*************\n"));
 
     for (int i = 0; i < n_attachments; i++)
@@ -572,6 +578,55 @@ int TPV_seradBOM_TC12(EPM_action_message_t msg)
             AOM_ask_value_string(attachments[i], "current_revision_id", &RevId);
             std::string a = ItemId;
             std::string b = RevId;
+            ItemAndRev = find_itemRevision(ItemId, RevId);
+            rev = ItemAndRev[1];
+            AOM_ask_value_double(rev, "ma4Weight", &hmotnostDouble);
+            if (hmotnostDouble == 0) {
+                ECHO(("ma4Weight na vrcholov√© polo≈æce nenalezeno pt√°m se na ma4Weight_S"));
+                AOM_ask_value_string(rev, "ma4Weight_S", &hmotnostStr);
+                ECHO(("Ma4Weight_S = %s\n", hmotnostStr));
+
+                if (hmotnostStr == nullptr || strlen(hmotnostStr) == 0)
+                {
+                    // If empty, allocate memory for the "0" string and copy it to hmotnost
+                    char* newString = new char[2]; // "0" + null terminator
+                    strcpy_s(newString, 2, "0");
+                    hmotnostStr = newString;
+                }
+
+                if (hasEnding(hmotnostStr, " kg")) {
+                    hmotnostStr = removeLastN(hmotnostStr, 3);
+                }
+
+                int length = strlen(hmotnostStr);
+                char* hmotnostFinal;
+
+                // Check if the length is greater than 13
+                if (length > 13) {
+                    char truncHmotnost[14]; // Nov√Ω string
+                    strncpy_s(truncHmotnost, hmotnostStr, 13); // Zkop√≠ruj prvn√≠ 13 charakter≈Ø
+                    truncHmotnost[13] = '\0';
+                    hmotnostFinal = truncHmotnost;
+                }
+                else {
+                    hmotnostFinal = hmotnostStr;
+                }
+
+                std::string a, b, c, d;
+
+                a = ItemId;
+                b = hmotnostFinal;
+                c = RevId;
+
+                ECHO(("Zmƒõna ItemID: %s, RevId: na ma4Weight_S: %s\n", a, b, c));
+
+                hmotnostFinal = replaceCommaWithPeriod(hmotnostFinal);
+                hmotnost = convertToDouble(hmotnostFinal);
+                AOM_lock(rev);
+                AOM_set_value_double(rev, "ma4Weight", hmotnost);
+                AOM_save_without_extensions(rev);
+
+            }
             ECHO(("ItemID: %s Current Revision ID: %s\n", a, b));
 
             RecursiveBOM(ItemId, RevId);
