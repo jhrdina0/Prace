@@ -116,10 +116,10 @@ int TPV_copyPV_TC14(EPM_action_message_t msg)
     std::string excelNazev = read_properties(msg);
     ECHO(("nazev excelu: %s\n", excelNazev));
 
-    //char* entries[1] = { (char*)("Název") };
+    //char* entries[1] = { (char*)("NÃ¡zev") };
     //char* values[1] = { const_cast<char*>(excelNazev.c_str()) };
 
-    //AE_find_dataset2((char*)("Název"), &dataset);
+    //AE_find_dataset2((char*)("NÃ¡zev"), &dataset);
     //QRY_find2("PV", &query);
     //QRY_execute(query, 1, entries, values, &n_found, &results);
 
@@ -152,8 +152,8 @@ int TPV_copyPV_TC14(EPM_action_message_t msg)
 
             // vytvoreni noveho datasetu
             tag_t new_dataset;
-            std::string item_nameSTR = item_name;
-            std::string new_name = "FV-" + item_nameSTR;
+            std::string item_id = ItemId;
+            std::string new_name = "FV-" + item_id;
             AE_copy_dataset_with_id(dataset, new_name.c_str(), "1", "1", &new_dataset);
 
             tag_t relation_type,
