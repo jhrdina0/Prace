@@ -1,3 +1,4 @@
+#define  _CRT_SECURE_NO_WARNINGS 1
 #include <stdio.h>
 #include <tcinit/tcinit.h>
 #include <tc/tc_startup.h>
@@ -31,6 +32,9 @@
 #include <tccore/uom.h>
 #include <ae\ae.h>
 #include <tccore\grm.h>
+#include <iomanip>
+#include <ctime>
+#include <qry/qry.h>
 
 
 #define TC_HANDLERS_DEBUG "TC_HANDLERS_DEBUG" 
@@ -114,9 +118,13 @@ std::vector<tag_t> create_item(std::string itemId, std::string itemName, std::st
             //druhItemu = "Item";
             druhItemu = "TPV4_Vyrobek";
         }
-        else if(itemType == "M") {
+        else if (itemType == "M") {
             //druhItemu = "Item";
             druhItemu = "TPV4_nak_dil";
+        }
+        else if (itemType == "V") {
+            //druhItemu = "Item";
+            druhItemu = "TPV4_Vyrobek";
         }
         else {
             druhItemu = "Item";
@@ -280,7 +288,8 @@ std::string connectStrings(const std::vector<std::string>& strings, const std::s
 int TPV_CSV2BOM_TC14(EPM_action_message_t msg)
 {
     int n_attachments,
-        repeats;
+        repeats,
+        num_relations;
     char
         * class_name;
     tag_t
@@ -288,10 +297,26 @@ int TPV_CSV2BOM_TC14(EPM_action_message_t msg)
         * attachments,
         class_tag,
         window,
-        tBOMTopLine;
+        tBOMTopLine,
+        projRevTag,
+        relation_type,
+        * relation_tags,
+        relation,
+        vyrobky_tag;
 
-    std::string csvPath = "C:\\ProgramData\\TPV_CSV2BOM_TCtemp.csv";
-    bool exportSucces = false;
+    time_t rawtime;
+    struct tm* timeinfo;
+    char buffer[80];
+
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+
+    strftime(buffer, sizeof(buffer), "%d-%m-%Y-%H-%M-%S", timeinfo);
+    std::string strTime(buffer);
+
+    std::string csvPath = "C:\\ProgramData\\TPV_CSV2BOM_TCtemp"+strTime+".csv";
+    bool exportSucces = false,
+        addRelation = false;
 
     EPM_ask_root_task(msg.task, &RootTask);
     EPM_ask_attachments(RootTask, EPM_target_attachment, &n_attachments, &attachments);
@@ -305,15 +330,20 @@ int TPV_CSV2BOM_TC14(EPM_action_message_t msg)
 
         if (strcmp(class_name, "Dataset") == 0) {
 
-            ECHO(("try Export Dataset"));
+            ECHO(("try Export Dataset\n"));
             AE_export_named_ref(attachments[i], "Text", csvPath.c_str());
-            ECHO(("Export Dataset hotovo"));
+            ECHO(("Export Dataset hotovo\n"));
             exportSucces = true;
         }
-
+        if (strcmp(class_name, "TPV4_ProjektRevision") == 0) {
+            ECHO(("TPV4_ProjektRevision nalezen v targetech.\n"));
+            projRevTag = attachments[i];         
+            addRelation = true;
+            //AOM_ask_relations(attachments[i], "TPV4_Vyrobek", &num_relations, &relation_tags);
+            //GRM_ask_relation_type(relation_tags[0], &relation_type);
+            
+        }
         ECHO(("class_name: %s \n", class_name));
-
-
     }
 
     if (not exportSucces) {
@@ -331,29 +361,10 @@ int TPV_CSV2BOM_TC14(EPM_action_message_t msg)
 
     vectorArray csvData = readCSV(csvPath);
     int rows = csvData.size();
-    std::vector<std::string> Karta = splitString(csvData[0][0]);
-    std::string nazevKarty = connectStrings(Karta, "-", ";");
 
-    //example output: "Karta:  202120011_07  - Auslegearm re. geschw. 10 meter;;;;;"
-    /*
-    Karta:
-
-    202120011_07
-
-    -
-    Auslegearm
-    re.
-    geschw.
-    10
-    meter;;;;;
-    ¨*/
-
-
-    // Je potřeba změnit
     // 1. položka se vytváří mimo for loop a vytvoří se na ní BOM view, pokud již neexistuje
-
-    // vytvoř vrcholový item
-    std::vector<tag_t> Tags = create_item(Karta[2], nazevKarty, "D", "ks");
+        // vytvoř vrcholový item
+    std::vector<tag_t> Tags = create_item(csvData[1][2], csvData[1][3], csvData[1][1], csvData[1][5]);
     OrigItem = Tags[0];
     OrigRev = Tags[1];
 
@@ -382,8 +393,18 @@ int TPV_CSV2BOM_TC14(EPM_action_message_t msg)
         AOM_save_without_extensions(OrigRev);
     }
     else {
-        ECHO(("Tato Karta Již existuje.\n"));
+        ECHO(("Kusovník na vrcholovém itemu již existuje.\n"));
+        remove(csvPath.c_str());
         return 0;
+    }
+    if (addRelation) {
+        //GRM_find_relation()
+        ECHO(("Přidej relace.\n"));
+        GRM_find_relation_type("TPV4_Vyrobky", &relation_type);
+        ECHO(("Relation type: %d\n", relation_type));
+        GRM_create_relation(projRevTag, OrigRev, relation_type, NULLTAG, &relation);
+        ECHO(("Relace vytvořena.\n"));
+        GRM_save_relation(relation);
     }
 
     ITEM_rev_list_all_bom_view_revs(OrigRev, &bvr_count, &bvrs);
@@ -391,7 +412,7 @@ int TPV_CSV2BOM_TC14(EPM_action_message_t msg)
     std::vector<int> levels(10, 0);
 
     // for loop pro každou položku v csv file, předpokládá se že všechny následující položky mají ID, Name, type a UOM ve sloupcích [2],[3],[1] a [5]
-    for (int i = 3; i < rows; i++) {
+    for (int i = 2; i < rows; i++) {
         std::vector<tag_t> Tags = create_item(csvData[i][2], csvData[i][3], csvData[i][1], csvData[i][5]);
         tag_t Item = Tags[0];
         tag_t Rev = Tags[1];
@@ -481,13 +502,11 @@ int TPV_CSV2BOM_TC14(EPM_action_message_t msg)
                     BOM_create_window(&window);
                     BOM_set_window_top_line(window, NULLTAG, ParentRev[0], NULLTAG, &tBOMTopLine);
                     BOM_line_ask_child_lines(tBOMTopLine, &n_children, &children);
-                    if (n_children != 0) {
-                        ECHO(("bl_sequence_no: %d, repeats: %d n_children: %d last children: %d\n", levels[origLevel], repeats, n_children, children[0]));
+                    ECHO(("bl_sequence_no: %d, repeats: %d n_children: %d last children: %d\n", levels[origLevel], repeats, n_children, children[0]));
 
-                        AOM_UIF_set_value(children[0], "bl_quantity", csvData[i][4].c_str());
-                        AOM_UIF_set_value(children[0], "bl_sequence_no", std::to_string(levels[origLevel]).c_str());
+                    AOM_UIF_set_value(children[0], "bl_quantity", csvData[i][4].c_str());
+                    AOM_UIF_set_value(children[0], "bl_sequence_no", std::to_string(levels[origLevel]).c_str());
 
-                    }
                     AOM_save_without_extensions(bvrs[0]);
 
                     MEM_free(Parent);
