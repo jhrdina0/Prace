@@ -35,6 +35,8 @@
 #include <iomanip>
 #include <ctime>
 #include <qry/qry.h>
+#include <ps/ps.h>
+#include <string>
 
 
 #define TC_HANDLERS_DEBUG "TC_HANDLERS_DEBUG" 
@@ -285,6 +287,88 @@ std::string connectStrings(const std::vector<std::string>& strings, const std::s
     return connectedString;
 }
 
+tag_t create_relation(char relation_type[GRM_relationtype_name_size_c + 1], tag_t primary_object_tag, tag_t secondary_object_tag)
+{
+    ECHO(("L:%d partrev %d design %d \n", __LINE__, primary_object_tag, secondary_object_tag));
+    tag_t relation_type_tag = NULLTAG;
+    GRM_find_relation_type(relation_type, &relation_type_tag);
+    ECHO(("realtion type_%d \n -primary_object_tag %d \n -secondary_object_tag %d \n", relation_type_tag, primary_object_tag, secondary_object_tag));
+    tag_t relation_tag = NULLTAG;
+    GRM_create_relation(primary_object_tag, secondary_object_tag, relation_type_tag, NULLTAG, &relation_tag);
+
+    GRM_save_relation(relation_tag);
+    return relation_tag;
+}
+
+static void create_dataset(char* type_name, char* name, tag_t item, tag_t rev, tag_t* dataset)
+{
+    char
+        format_name[AE_io_format_size_c + 1] = "BINARY_REF";
+    tag_t
+        datasettype,
+        tool;
+
+    AE_find_datasettype2(type_name, &datasettype);
+    if (datasettype == NULLTAG)
+    {
+        //ECHO(("Dataset Type %s not found!\n", type_name);
+        exit(EXIT_FAILURE);
+    }
+
+    AE_ask_datasettype_def_tool(datasettype, &tool);
+
+    //ECHO(("Creating Dataset: %s\n", name);
+    AE_create_dataset_with_id(datasettype, name, "", "", "", dataset);
+    //verze TC11  AE_create_dataset(datasettype, name, "", dataset);
+
+    AE_set_dataset_tool(*dataset, tool);
+    if (strcmp(type_name, "PDF")) strcpy(format_name, "PDF");
+
+    AE_set_dataset_format2(*dataset, format_name);
+    //ECHO(("Saving Dataset: %s\n", name);
+    AOM_save_with_extensions(*dataset);
+
+    /*attach dataset to item revision */
+    create_relation((char*)"IMAN_specification", rev, *dataset);
+    // ITEM_attach_rev_object(rev, *dataset, ITEM_specification_atth);
+   //  ITEM_save_item(item);
+
+}
+
+void importDataset(tag_t dataset, char* way, char* ref, char* fileName)
+{
+    /*  AE_find_dataset finds latest revision of dataset */
+
+    //IFERR_ABORT(AE_find_dataset("6667776-A", &dataset));
+    //ECHO("\n dataset: %u \n", dataset);
+    AOM_lock(dataset);
+    AOM_refresh(dataset, TRUE);
+    //  ECHO(("\n dataset=%d) \n ref=%s) \n way=%s) \n filename=%s) \n",dataset, ref, way, fileName);
+      /* the fourth argument must be a unique name in the volume */
+    AE_import_named_ref(dataset, ref, way, fileName, SS_BINARY);
+    // AE_import_named_ref(dataset, "UG-QuickAccess-Binary", "W:\\images_preview.qaf", "6667776-A_binary.qaf",  SS_BINARY);
+
+    AOM_save_with_extensions(dataset);
+    AOM_refresh(dataset, FALSE);
+    AOM_unlock(dataset);
+    AOM_unload(dataset);
+}
+
+std::string getPDFname(std::string str) {
+    std::replace(str.begin(), str.end(), '\\', ' ');  // replace ':' by ' '
+
+    std::vector<std::string> array;
+    std::stringstream ss(str);
+    std::string temp;
+    while (ss >> temp)
+        array.push_back(temp);
+    ECHO(("First string: %s\n", array[0]));
+    int length = array.size();
+    ECHO(("pdf NAME: %s\n", array[length - 1]));
+    return array[length - 1];
+
+}
+
 int TPV_CSV2BOM_TC14(EPM_action_message_t msg)
 {
     int n_attachments,
@@ -354,6 +438,7 @@ int TPV_CSV2BOM_TC14(EPM_action_message_t msg)
 
     std::string user;
     std::string userGroup;
+    std::string PDFname;
 
     // Vytvoření položky
     tag_t OrigItem = NULLTAG;
@@ -362,11 +447,50 @@ int TPV_CSV2BOM_TC14(EPM_action_message_t msg)
     vectorArray csvData = readCSV(csvPath);
     int rows = csvData.size();
 
+    EMH_store_error_s2(EMH_severity_warning, 1,
+        "EMH_severity_warning", "ITK_ok");
+
+    try {
+        if (csvData[1].size() > 7) {
+            throw 505;
+        }
+        if (csvData[1].size() < 5) {
+            throw 506;
+        }
+        if (csvData[1][0] == "") {
+            throw 507;
+        }
+    }
+    catch (...) {
+        ECHO(("ERROR, Špatný formát CSV!\n"));
+        //EMH_store_error_s2(EMH_severity_warning, 1,"EMH_severity_warning", "ITK_ok");
+        EMH_clear_errors();
+        EMH_store_error_s1(EMH_severity_warning, 919002,"");
+        return 0;
+    }
+
     // 1. položka se vytváří mimo for loop a vytvoří se na ní BOM view, pokud již neexistuje
         // vytvoř vrcholový item
     std::vector<tag_t> Tags = create_item(csvData[1][2], csvData[1][3], csvData[1][1], csvData[1][5]);
     OrigItem = Tags[0];
     OrigRev = Tags[1];
+    tag_t newFileTag;
+    IMF_file_t fileDescriptor;
+
+    if (csvData[1].size() > 6) {
+        if (csvData[1][6] != "-") {
+            if (csvData[1][6] != "") {
+                tag_t dataset;
+                char* pathname;
+
+                PDFname = getPDFname(csvData[1][6]);
+
+                create_dataset((char*)"PDF", (char*)PDFname.c_str(), OrigItem, OrigRev, &dataset);
+
+                importDataset(dataset, (char*)csvData[1][6].c_str(), (char*)"PDF_Reference", (char*)PDFname.c_str());
+            }
+        }
+    }
 
     // kontrola zda Bom View již existuje
     int bvr_count;
@@ -417,6 +541,22 @@ int TPV_CSV2BOM_TC14(EPM_action_message_t msg)
         tag_t Item = Tags[0];
         tag_t Rev = Tags[1];
         repeats = 0;
+
+        if (csvData[i].size() > 6) {
+            if (csvData[i][6] != "-") {
+                tag_t dataset;
+                char* pathname;
+
+                PDFname = getPDFname(csvData[i][6]);
+
+                create_dataset((char*)"PDF", (char*)PDFname.c_str(), Item, Rev, &dataset);
+
+                importDataset(dataset, (char*)csvData[i][6].c_str(), (char*)"PDF_Reference", (char*)PDFname.c_str());
+            }
+        }
+        else {
+            ECHO(("No PDF attached. \n"));
+        }
 
         // předpokládá se že level je uveden ve sloupci [0] a je ve formátu 1.,2..,3...,4....,
         // kod by nefungoval v případě že by byl level vyšší než 9
