@@ -74,7 +74,7 @@ extern "C" DLLAPI int TPV_BOM2CSV_TC14_init_module(int* decision, va_list args)
 
 std::vector<tag_t> find_itemRevision(const std::string& InputAttrValues, const std::string& RevId) {
 	std::vector<tag_t> ItemAndRev;
-	// Vyhled·nÌ poloûek
+	// Vyhled√°n√≠ polo≈æek
 	const char* AttrNames[1] = { ITEM_ITEM_ID_PROP };
 	const char* AttrValues[1] = { InputAttrValues.c_str() };
 	int ItemsCount = 0;
@@ -87,7 +87,7 @@ std::vector<tag_t> find_itemRevision(const std::string& InputAttrValues, const s
 	ITEM_find_revision(Items[0], RevId.c_str(), &Rev);
 	ItemAndRev.push_back(Rev);
 	MEM_free(Items);
-	//vr·tÌ tag revize Itemu
+	//vr√°t√≠ tag revize Itemu
 	return ItemAndRev;
 }
 
@@ -200,7 +200,7 @@ int CountInRelation(tag_t Child, std::string Relation, tag_t** primary_obj)
 				WSOM_ask_object_type2(primary_list[i], &Type);//Returns the object type of the specified WorkspaceObject.
 
 				*primary_obj[returnCount] = primary_list[i];
-				++returnCount;//kdyz neni zakomentovan˝ blok nÌûe toto smazat
+				++returnCount;//kdyz neni zakomentovan√Ω blok n√≠≈æe toto smazat
 			   /*if (strcmp(Type,"H4_LAKRevision")==0 ||strcmp(Type,"H4_NPVDRevision")==0)
 			   {
 
@@ -441,7 +441,7 @@ std::string ExportAttachments(tag_t ItemRev, std::string Values, std::string Pat
 		if (str == "DXF" && AttachType == "DXF") {
 			std::string s = dataset_name;
 			std::replace(s.begin(), s.end(), '/', '_');
-			cesta = Path + "DXF\\" + s + ".dxf";
+			cesta = Path + "DXF\\" + s;
 			AE_export_named_ref(specs[i], "DXF", cesta.c_str());
 		}
 		MEM_free(dataset_name);
@@ -578,7 +578,7 @@ vectorArray RecursiveBOM(const std::string& InputAttrValues, const std::string& 
 				}
 			}
 
-			//vöechny ; symboly jsou nahrazeny , aby se nepoökodil form·t csv
+			//v≈°echny ; symboly jsou nahrazeny , aby se nepo≈°kodil form√°t csv
 			std::replace(value.begin(), value.end(), ';', ',');
 
 			csv_row.push_back(value);
@@ -657,7 +657,7 @@ vectorArray RecursiveBOM(const std::string& InputAttrValues, const std::string& 
 				}
 			}
 
-			//vöechny ; symboly jsou nahrazeny , aby se nepoökodil form·t csv
+			//v≈°echny ; symboly jsou nahrazeny , aby se nepo≈°kodil form√°t csv
 			std::replace(value.begin(), value.end(), ';', ',');
 
 			csv_row.push_back(value);
@@ -711,6 +711,7 @@ int createCSV(vectorArray csv, std::string exportFolderPath, vectorArray config,
 	std::string filePath = exportFolderPath + "\\export" + ItemId + "-" + RevId + ".csv";
 	ECHO(("L:%d filePath %s \n", __LINE__, filePath.c_str()));
 	file.open(filePath);
+	std::string symbol = "#";
 	if(definefirstline)
 	{ 
 		ECHO(("L:%d First Line %s \n", __LINE__, FirstLine.c_str()));
@@ -730,8 +731,23 @@ int createCSV(vectorArray csv, std::string exportFolderPath, vectorArray config,
 		file << csv[i][0];
 		if (config[0][2].compare("varchar") == 0) file << "'";
 		for (int j = 1; j < csv[0].size(); j++) {
-			
-			file << "#";
+			if (config[j][0].compare("Export") == 0 && config[j - 1][0].compare("Export") == 0) {
+				if (csv[i][j].size() == 0) {
+					symbol = "";
+				}
+				else if (csv[i][j].size() != 0 && csv[i][j - 1].size() == 0) {
+					symbol = "";
+				}
+				else {
+					ECHO(("vlo≈æ st≈ôedn√≠k\n"));
+					symbol = ";";
+				}
+			}
+			file << symbol;
+			if (symbol.compare(";") == 0 || symbol.compare("") == 0) {
+				symbol = "#";
+			}
+
 			if (config[j][2].compare("varchar")==0) file << "'";
 			if (config[j][2].compare("quantity") == 0 && csv[i][j].size() == 0) file << "1";
 			file << csv[i][j];
@@ -839,7 +855,7 @@ std::vector<std::string> read_properties(EPM_action_message_t msg)
 
 int TPV_BOM2CSV_TC14(EPM_action_message_t msg)
 {
-	ECHO(("*******************ZA»ATEK BOM2CSV**********************\n"));
+	ECHO(("*******************ZAƒåATEK BOM2CSV**********************\n"));
 	vectorArray
 		csv,
 		config;
@@ -859,7 +875,7 @@ int TPV_BOM2CSV_TC14(EPM_action_message_t msg)
 
 	strcpy(callBat, "0");
 	std::vector<std::string> props = read_properties(msg);
-	ECHO(("P¯ed configem\n"));
+	ECHO(("P≈ôed configem\n"));
 	//return 0;
 	config = load_config(props[0]);
 	ECHO(("Po configu\n"));
