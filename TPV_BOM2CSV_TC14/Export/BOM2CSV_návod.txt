@@ -1,0 +1,52 @@
+config Formát
+druh# hodnota# typ#
+
+Druh možnosti:
+ExportFolder	(vždy na 1. øádku, odkazuje na složku kam se vyexportuje csv)
+ItemType	(vždy na 2. øádku, vrcholový item na kterém se wokflow spustí)
+Item		(libovolný øádek, zeptá se na hodnotu z Itemu)
+BOM		(libovolný øádek, zeptá se na hodnotu z BOMu)
+Rev		(libovolný øádek, zeptá se na hodnotu z Revize itemu)
+Rev4Relation	
+GetImanFilePath	(libovolný øádek, zapíše cestu na PDF nebo DXF z volume)
+Relation	(libovolný øádek, vrátí hodnotu pøes definovanou relaci)
+Writte		(libovolný øádek, vrátí libovolnou hodnotu)
+Export		(PDF a DXF musí být v configu zasebou a jsou oddìleny ; exportuje PDF nebo DXF a zapíše cestu)
+
+Hodnota možnosti:
+Druh		   popis		 ukázka
+Item, BOM, Rev 	-> název atributu 	 (tpv4_atribut1)
+GetImanFilePath -> typ,relace 		 (PDF,IMAN_specification)
+Relation	-> relace,název atributu (TC_Primary_Design_Representation,tpv4_TPV_klic)
+Writte		-> libovolná hodnota	 (1)
+Export		-> typ,relace		 (PDF,IMAN_specification)
+
+Typ možnosti:
+varchar 	-> obalí hodnotu do uvozovek
+number		-> nic
+quantity 	-> pokud je hodnota prázdná, zapíše 0
+----------------------------------------------------------------------------------------------------------
+Ukázka config
+
+ExportFolder# C:\\SPLM\\Apps\\Export\\csv# varchar
+ItemType# TPV4_sestavaRevision# varchar
+BOM# bl_parent# number
+Item# item_id# number
+Rev# item_revision_id# number
+Rev# object_name# number
+Rev# object_type# number
+BOM# bl_quantity# quantity
+Rev# tpv4_objem# number
+Rev# tpv4_plocha# number
+Rev# tpv4_hmotnost# number
+BOM# bl_sequence_no# number
+Rev# tpv4_TPV_klicS# number
+Relation# TC_Primary_Design_Representation,tpv4_TPV_klic# number
+Export# PDF,IMAN_specification# number
+---------------------------------------------------------------------------------------------------------------------
+Handler TPV_BOM2CSV_TC14 argumenty
+Argument		Hodnota
+-ConfigPath		C:\SPLM\Apps\Export\config_BOM2CSV_sestava.txt
+-ExportFolderPath	\\Sr006\
+-FirstLine		ItemIDVyssi#ItemID#ItemRevisionID#Nazev#TYP#Mnozstvi#Objem#Plocha#Hmotnost#Pozice#KLIC_TPV_RAW#KLIC_TPV#PRILOHY
+-CallBat		TC2TPV.bat
