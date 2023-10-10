@@ -1,15 +1,16 @@
-ExportFolder: C:\\SPLM\\Apps\\Export
-ItemType: TPV4_hut_matRevision
-BOM: bl_item_object_type
-BOM: bl_parent
-Item: item_id
-Item: uom_tag
-Item: current_desc
-BOM: bl_quantity
-Rev: tpv4_rozmer_norma
-Rev: tpv4_atribut_1
-Rev: tpv4_atribut_2
-Rev: tpv4_sklad_mn
-Rev: last_mod_date
-Export: PDF,IMAN_specification
-Export: DXF,IMAN_specification
+ExportFolder# C:\\SPLM\\Apps\\Export\\csv# varchar
+ItemType# TPV4_sestavaRevision# varchar
+BOM# bl_parent# number
+Item# item_id# number
+Rev# item_revision_id# number
+Rev# object_name# number
+Rev# object_type# number
+BOM# bl_quantity# quantity
+Rev# tpv4_objem# number
+Rev# tpv4_plocha# number
+Rev# tpv4_hmotnost# number
+BOM# bl_sequence_no# number
+Rev# tpv4_TPV_klicS# number
+Relation# TC_Primary_Design_Representation,tpv4_TPV_klic# number
+Export# PDF,IMAN_specification# number
+Export# DXF,IMAN_specification# number
