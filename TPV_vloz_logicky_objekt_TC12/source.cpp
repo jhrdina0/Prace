@@ -60,34 +60,15 @@ extern "C" DLLAPI int TPV_vloz_logicky_objekt_TC12_init_module(int* decision, va
 
     // Registrace action handleru
     int Status = EPM_register_action_handler("TPV_vloz_logicky_objekt_TC12", "", TPV_vloz_logicky_objekt_TC12);
-    if (Status == ITK_ok) printf("Handler pro vlozeni logického objektu do PDF % s \n", "TPV_vloz_logicky_objekt_TC12");
+    if (Status == ITK_ok) printf("Handler pro vlozeni logickÃ©ho objektu do PDF % s \n", "TPV_vloz_logicky_objekt_TC12");
 
 
     return ITK_ok;
 }
 
-static tag_t ask_item_revisions_master_form(tag_t item_revision)
-{
-    int
-        n_secondary_objects = 0;
-    tag_t
-        relation = NULLTAG,
-        * secondary_objects = NULL,
-        item_revision_master_form = NULLTAG;
-
-    GRM_find_relation_type("IMAN_master_form", &relation);
-    GRM_list_secondary_objects_only(item_revision, relation, &n_secondary_objects, &secondary_objects);
-
-    /* should always be just one */
-    item_revision_master_form = secondary_objects[0];
-
-    if (secondary_objects) MEM_free(secondary_objects);
-    return item_revision_master_form;
-}
-
 int TPV_vloz_logicky_objekt_TC12(EPM_action_message_t msg)
 {
-    ECHO(("************************** zaèátek TPV_vloz_logicky_objekt_TC12 ******************************\n"));
+    ECHO(("************************** zaÃ¨Ã¡tek TPV_vloz_logicky_objekt_TC12 ******************************\n"));
     int n_attachments;
     char
         * class_name,
@@ -138,7 +119,7 @@ int TPV_vloz_logicky_objekt_TC12(EPM_action_message_t msg)
                     ECHO(("%d Relace jiz existuje !\n", error_code2));
                 }
                 else {
-                    ECHO(("Relace vytvoøena.\n"));
+                    ECHO(("Relace vytvoÃ¸ena.\n"));
                 }
                 AOM_save(attachments[i]);
             }
