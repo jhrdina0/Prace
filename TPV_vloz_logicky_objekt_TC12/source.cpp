@@ -68,7 +68,7 @@ extern "C" DLLAPI int TPV_vloz_logicky_objekt_TC12_init_module(int* decision, va
 
 int TPV_vloz_logicky_objekt_TC12(EPM_action_message_t msg)
 {
-    ECHO(("************************** zaèátek TPV_vloz_logicky_objekt_TC12 ******************************\n"));
+    ECHO(("************************** začátek TPV_vloz_logicky_objekt_TC12 ******************************\n"));
     int n_attachments;
     char
         * class_name,
@@ -119,7 +119,7 @@ int TPV_vloz_logicky_objekt_TC12(EPM_action_message_t msg)
                     ECHO(("%d Relace jiz existuje !\n", error_code2));
                 }
                 else {
-                    ECHO(("Relace vytvoøena.\n"));
+                    ECHO(("Relace vytvořena.\n"));
                 }
                 AOM_save(attachments[i]);
             }
