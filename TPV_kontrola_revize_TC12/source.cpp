@@ -85,7 +85,7 @@ static tag_t ask_item_revisions_master_form(tag_t item_revision)
     return item_revision_master_form;
 }
 const std::pair<int,std::string> findMonth(const std::string& dateString) {
-    std::vector<std::string> monthList{"Jan", "Feb", "Mar", "Apr", "May", "June", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+    std::vector<std::string> monthList{"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
     std::pair<int, std::string> output;
 
     for (int i = 0; i < monthList.size(); i++) {
@@ -129,7 +129,7 @@ const std::string modifyDate(char* date) {
 
 int TPV_kontrola_revize_TC12(EPM_action_message_t msg)
 {
-    ECHO(("************************** zaèátek TPV_kontrola_revize_TC12******************************\n"));
+    ECHO(("************************** zaÃ¨Ã¡tek TPV_kontrola_revize_TC12******************************\n"));
     int n_attachments;
     char
         * class_name,
@@ -169,7 +169,7 @@ int TPV_kontrola_revize_TC12(EPM_action_message_t msg)
 
             if (strcmp(RevId, "-") == 0) {
                 ECHO(("Revize - nalezena\n"));
-                // pøepsání atributu do speciálních atributù revize
+                // pÃ¸epsÃ¡nÃ­ atributu do speciÃ¡lnÃ­ch atributÃ¹ revize
                 tag_t soucasny_master_form = ask_item_revisions_master_form(attachments[i]);
                 AOM_lock(attachments[i]);
                 AOM_lock(soucasny_master_form);
@@ -224,7 +224,7 @@ int TPV_kontrola_revize_TC12(EPM_action_message_t msg)
                 ITEM_find_item(ItemId, &item);
                 ITEM_find_revision(item, "-", &origRev);
 
-                // pøepsání atributu do speciálních atributù revize
+                // pÃ¸epsÃ¡nÃ­ atributu do speciÃ¡lnÃ­ch atributÃ¹ revize
                 tag_t soucasny_master_form = ask_item_revisions_master_form(attachments[i]);
 
                 AOM_ask_value_string(soucasny_master_form, "ma4_ApprovalDate", &ma4_ApprovalDate);
@@ -245,7 +245,7 @@ int TPV_kontrola_revize_TC12(EPM_action_message_t msg)
                 AOM_set_value_string(attachments[i], "ma4RevApprover", ma4Approver);
                 AOM_set_value_string(attachments[i], "ma4RevChecker", ma4Checker);
 
-                // pøepsání atributù z nejstarší revize - do master formu souèasné revize
+                // pÃ¸epsÃ¡nÃ­ atributÃ¹ z nejstarÂšÃ­ revize - do master formu souÃ¨asnÃ© revize
 
                 AOM_ask_value_string(origRev, "ma4_ApprovalDate", &orig_ma4_ApprovalDate);
                 AOM_ask_value_string(origRev, "ma4_CheckDate", &orig_ma4_CheckDate);
