@@ -66,6 +66,58 @@ extern "C" DLLAPI int TPV_vloz_logicky_objekt_TC12_init_module(int* decision, va
     return ITK_ok;
 }
 
+tag_t find_dataset(tag_t item_rev) {
+    tag_t 
+        relationType,
+        type_tag,
+        * specs;
+    int n_specs;
+    char
+        * type_name,
+        * dataset_name;
+
+    GRM_find_relation_type("IMAN_specification", &relationType);
+    GRM_list_secondary_objects_only(item_rev, relationType, &n_specs, &specs);
+
+    ECHO(("Amount: %d\n", n_specs));
+
+    for (int i = 0; i < n_specs; i++) {
+        TCTYPE_ask_object_type(specs[i], &type_tag);
+        TCTYPE_ask_name2(type_tag, &type_name);
+        AOM_ask_value_string(specs[i], "object_type", &dataset_name);
+        if (strcmp(dataset_name, "PDF") == 0) {
+            ECHO(("Found dataset PDF\n"));
+            return specs[i];
+        }
+        ECHO(("Dataset name: %s\n", dataset_name));
+    }
+    return 0;
+}
+
+void add_logical_object(tag_t pdf) {
+    tag_t 
+        secondary_object_tag,
+        relation_type,
+        relation;
+    GRM_find_relation_type("PDF_Approve_Info", &secondary_object_tag);
+    ECHO(("Secondary object tag: %d\n", secondary_object_tag));
+
+    GRM_find_relation_type("Fnd0LogicalObjectTypeRel", &relation_type);
+    ECHO(("Relation tag: %d\n", relation_type));
+
+    ECHO(("PDF tag: %d\n", pdf));
+    AOM_lock(pdf);
+    int error_code = GRM_create_relation(pdf, secondary_object_tag, relation_type, NULLTAG, &relation);
+    int error_code2 = GRM_save_relation(relation);
+    if (error_code2 != 0) {
+        ECHO(("%d Relaci nebylo možné vytvořit, pravděpodobně již existuje.\n", error_code2));
+    }
+    else {
+        ECHO(("Relace vytvořena.\n"));
+    }
+    AOM_save(pdf);
+}
+
 int TPV_vloz_logicky_objekt_TC12(EPM_action_message_t msg)
 {
     ECHO(("************************** začátek TPV_vloz_logicky_objekt_TC12 ******************************\n"));
@@ -96,32 +148,14 @@ int TPV_vloz_logicky_objekt_TC12(EPM_action_message_t msg)
 
         ECHO(("Class_name: %s\n", class_name));
 
-        if (strcmp(class_name, "Dataset") == 0)
+        if (strcmp(class_name, "MA4DesignPartRevision") == 0)
         {
-            AOM_ask_value_string(attachments[i], "object_type", &object_type);
-            ECHO(("Object_type: %s\n", object_type));
-            if (strcmp(object_type, "PDF") == 0) {
-
-                AOM_ask_value_string(attachments[i], "object_name", &dataset_name);
-                ECHO(("Dataset name: %s\n", dataset_name));
-
-                tag_t secondary_object_tag;
-                GRM_find_relation_type("PDF_Approve_Info", &secondary_object_tag);
-                ECHO(("Secondary object tag: %d\n", secondary_object_tag));
-
-                GRM_find_relation_type("Fnd0LogicalObjectTypeRel", &relation_type);
-                ECHO(("Relation tag: %d\n", relation_type));
-
-                AOM_lock(attachments[i]);
-                int error_code = GRM_create_relation(attachments[i], secondary_object_tag, relation_type, NULLTAG, &relation);
-                int error_code2 = GRM_save_relation(relation);
-                if (error_code2 != 0) {
-                    ECHO(("%d Relace jiz existuje !\n", error_code2));
-                }
-                else {
-                    ECHO(("Relace vytvořena.\n"));
-                }
-                AOM_save(attachments[i]);
+            tag_t PDF = find_dataset(attachments[i]);
+            if (PDF == 0) {
+                ECHO(("PDF Výkres nenalezen.\n"));
+            }
+            else {
+                add_logical_object(PDF);
             }
         }
     }
