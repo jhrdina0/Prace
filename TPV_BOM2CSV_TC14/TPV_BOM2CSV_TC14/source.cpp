@@ -827,10 +827,6 @@ std::vector<std::string> read_properties(EPM_action_message_t msg)
 		{
 			config = Value;
 		}
-		if (strcmp("ExportFolderPath", Flag) == 0 && Value != nullptr)
-		{
-			AttachPath = Value;
-		}
 		if (strcmp("FirstLine", Flag) == 0 && Value != nullptr)
 		{
 			definefirstline = true;
@@ -847,7 +843,6 @@ std::vector<std::string> read_properties(EPM_action_message_t msg)
 		MEM_free(Value);
 	}
 	props.push_back(config);
-	props.push_back(AttachPath);
 	props.push_back(FirstLine);
 
 	return props;
@@ -879,9 +874,8 @@ int TPV_BOM2CSV_TC14(EPM_action_message_t msg)
 	//return 0;
 	config = load_config(props[0]);
 	ECHO(("Po configu\n"));
-	AttachPath = props[1];
-	ECHO(("L:%d First Line %s \n", __LINE__, props[2].c_str()));
-	FirstLine = props[2];
+	ECHO(("L:%d First Line %s \n", __LINE__, props[1].c_str()));
+	FirstLine = props[1];
 	ECHO(("L:%d First Line %s \n", __LINE__, FirstLine.c_str()));
 	int config0size = config[0].size();
 	int configsize = config.size();
@@ -889,7 +883,9 @@ int TPV_BOM2CSV_TC14(EPM_action_message_t msg)
 	ECHO(("L:%d  \n", __LINE__));
 	std::string itemType = config[1][1];
 	ECHO(("L:%d  \n", __LINE__));
-	config.erase(config.begin(), config.begin() + 2);
+	AttachPath = config[2][1];
+	ECHO(("L:%d  \n", __LINE__));
+	config.erase(config.begin(), config.begin() + 3);
 	ECHO(("L:%d  \n", __LINE__));
 	EPM_ask_root_task(msg.task, &RootTask);
 	EPM_ask_attachments(RootTask, EPM_target_attachment, &n_attachments, &attachments);
