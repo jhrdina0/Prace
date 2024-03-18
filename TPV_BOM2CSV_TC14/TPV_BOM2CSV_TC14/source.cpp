@@ -105,7 +105,7 @@ static tag_t ask_item_revision_from_bom_line(tag_t bom_line)
 		item_revision = NULLTAG;
 	char
 		* item_id = NULL,
-		*rev_id = NULL;
+		* rev_id = NULL;
 
 	get_string(bom_line, "bl_item_item_id", &item_id);
 	get_string(bom_line, "bl_rev_item_revision_id", &rev_id);
@@ -129,9 +129,9 @@ std::string convertDateToString(const date_t& date) {
 		s_minute,
 		s_second;
 
-	if (month < 10) s_month="0"+std::to_string(date.month);
+	if (month < 10) s_month = "0" + std::to_string(date.month);
 	else s_month = std::to_string(date.month);
-	
+
 	if (day < 10)s_day = "0" + std::to_string(date.day);
 	else s_day = std::to_string(date.day);
 
@@ -147,7 +147,7 @@ std::string convertDateToString(const date_t& date) {
 		s_month + "-" +
 		std::to_string(date.year) + " " +
 		s_hour + ":" +
-		s_minute+ ":" +
+		s_minute + ":" +
 		s_second;
 
 	return dateString;
@@ -172,7 +172,7 @@ int CountInRelation(tag_t Child, std::string Relation, tag_t** primary_obj)
 {
 	int Count = 0;
 	int returnCount = 0;
-	tag_t * primary_list = NULLTAG;
+	tag_t* primary_list;
 	tag_t relation_type;
 	ECHO(("L:%d find relation %s \n", __LINE__, Relation.c_str()));
 	int err = GRM_find_relation_type(Relation.c_str(), &relation_type);
@@ -190,24 +190,24 @@ int CountInRelation(tag_t Child, std::string Relation, tag_t** primary_obj)
 	}
 	else if (Count > 1)
 	{
-		for (int i = 0;i < Count;i++)
+		for (int i = 0; i < Count; i++)
 		{
 			logical latest = false;
 			ITEM_rev_sequence_is_latest(primary_list[i], &latest);
 			if (latest)
 			{
-				char *Type;
+				char* Type;
 				WSOM_ask_object_type2(primary_list[i], &Type);//Returns the object type of the specified WorkspaceObject.
 
 				*primary_obj[returnCount] = primary_list[i];
 				++returnCount;//kdyz neni zakomentovaný blok níže toto smazat
-			   /*if (strcmp(Type,"H4_LAKRevision")==0 ||strcmp(Type,"H4_NPVDRevision")==0)
-			   {
+				/*if (strcmp(Type,"H4_LAKRevision")==0 ||strcmp(Type,"H4_NPVDRevision")==0)
+				{
 
 
-				   if(primary_list) MEM_free(primary_list);
-				   return 1;
-			   }*/
+					if(primary_list) MEM_free(primary_list);
+					return 1;
+				}*/
 			}
 		}
 	}
@@ -217,9 +217,9 @@ int CountInRelation(tag_t Child, std::string Relation, tag_t** primary_obj)
 	if (primary_list) MEM_free(primary_list);
 	return returnCount;
 }
-char* ask_imanfile_path(tag_t fileTag )
+char* ask_imanfile_path(tag_t fileTag)
 {
-	char *path;
+	char* path;
 	int
 		machine_type;
 	tag_t
@@ -273,7 +273,7 @@ std::string readElement(tag_t Tag, std::string property_name) {
 		ECHO(("property_name: %s, value=%s\n", property_name.c_str(), value));
 		if (property_name == "bl_sequence_no") {
 			if (value[0] == '\0') {
-				value = "10";
+				value = (char*)"10";
 				ECHO(("BL_SEQUENCE_NO '' found, changing to 10...\n"));
 			}
 		}
@@ -383,7 +383,7 @@ std::string ExportPathFile(tag_t ItemRev, std::string Values, std::string Path, 
 				{
 					tag_t referenced_object;
 					char* reference_name,
-						*file_path;
+						* file_path;
 					AE_reference_type_t ref_type;
 
 					AE_find_dataset_named_ref2(specs[i], t, &reference_name, &ref_type, &referenced_object);
@@ -435,7 +435,7 @@ std::string ExportAttachments(tag_t ItemRev, std::string Values, std::string Pat
 		if (str == "PDF" && AttachType == "PDF") {
 			std::string s = dataset_name;
 			std::replace(s.begin(), s.end(), '/', '_');
-			cesta = Path + "PDF\\" + s +".pdf";
+			cesta = Path + "PDF\\" + s + ".pdf";
 			AE_export_named_ref(specs[i], "PDF_Reference", cesta.c_str());
 		}
 		if (str == "DXF" && AttachType == "DXF") {
@@ -485,7 +485,7 @@ std::string findAttrFromRelation(tag_t child, char* Relation, std::string proper
 			}
 		}
 	}
-	
+
 	if (primary_objects) {
 		MEM_free(primary_objects);
 	}
@@ -502,7 +502,7 @@ vectorArray RecursiveBOM(const std::string& InputAttrValues, const std::string& 
 	tag_t
 		window,
 		tBOMTopLine,
-		*children;
+		* children;
 	ECHO(("L:%d \n", __LINE__));
 	std::vector<tag_t> ItemAndRev;
 	ItemAndRev = find_itemRevision(InputAttrValues, RevId);
@@ -518,7 +518,7 @@ vectorArray RecursiveBOM(const std::string& InputAttrValues, const std::string& 
 		const std::string ParentId = InputAttrValues;
 		char
 			* ItemId,
-			*RevId;
+			* RevId;
 		tag_t Tag = tBOMTopLine;
 		std::vector<std::string> csv_row;
 
@@ -546,8 +546,8 @@ vectorArray RecursiveBOM(const std::string& InputAttrValues, const std::string& 
 				std::string Relation = splittedValues[1];
 				ECHO(("L:%d \n", __LINE__));
 				tag_t* primary_obj;
-					int n = CountInRelation(ItemRev, Relation, &primary_obj);
-					ECHO(("L:%d count relation %d \n", __LINE__, n));
+				int n = CountInRelation(ItemRev, Relation, &primary_obj);
+				ECHO(("L:%d count relation %d \n", __LINE__, n));
 				value = readElement(primary_obj[0], Attr);
 			}
 			if (config[j][0] == "GetImanFilePath") {
@@ -597,7 +597,7 @@ vectorArray RecursiveBOM(const std::string& InputAttrValues, const std::string& 
 		const std::string ParentId = InputAttrValues;
 		char
 			* ItemId,
-			*RevId;
+			* RevId;
 		tag_t Tag = children[i];
 		std::vector<std::string> csv_row;
 
@@ -627,7 +627,7 @@ vectorArray RecursiveBOM(const std::string& InputAttrValues, const std::string& 
 				ECHO(("L:%d \n", __LINE__));
 				tag_t* primary_obj;
 				int n = CountInRelation(ItemRev, Relation, &primary_obj);
-				ECHO(("L:%d count relation %d \n", __LINE__,n));
+				ECHO(("L:%d count relation %d \n", __LINE__, n));
 				value = readElement(primary_obj[0], Attr);
 			}
 			if (config[j][0] == "Export") {
@@ -636,7 +636,7 @@ vectorArray RecursiveBOM(const std::string& InputAttrValues, const std::string& 
 			if (config[j][0] == "GetImanFilePath") {
 				value = ExportPathFile(ItemRev, config[j][1], AttachPath, ItemId);
 			}
-			if(config[j][0] == "Writte") {
+			if (config[j][0] == "Writte") {
 				value = config[j][1];
 			}
 			if (config[j][0] == "Relation") {
@@ -705,15 +705,15 @@ void CallBridge(std::string file)
 	//system("call TC2TPV.bat");
 }
 
-int createCSV(vectorArray csv, std::string exportFolderPath, vectorArray config, char* ItemId, char* RevId,std::string FirstLine)
+int createCSV(vectorArray csv, std::string exportFolderPath, vectorArray config, char* ItemId, char* RevId, std::string FirstLine)
 {
 	std::ofstream file;
 	std::string filePath = exportFolderPath + "\\export" + ItemId + "-" + RevId + ".csv";
 	ECHO(("L:%d filePath %s \n", __LINE__, filePath.c_str()));
 	file.open(filePath);
 	std::string symbol = "#";
-	if(definefirstline)
-	{ 
+	if (definefirstline)
+	{
 		ECHO(("L:%d First Line %s \n", __LINE__, FirstLine.c_str()));
 		file << FirstLine;
 	}
@@ -721,13 +721,13 @@ int createCSV(vectorArray csv, std::string exportFolderPath, vectorArray config,
 	{
 		for (int j = 0; j < config.size(); j++)
 		{
-		file << config[j][1] << "#";
+			file << config[j][1] << "#";
 		}
 	}
 	for (int i = 0; i < csv.size(); i++) {
 		file << "\n";
 		if (config[0][2].compare("varchar") == 0) file << "'";
-		if (config[0][2].compare("quantity") == 0 && csv[i][0].size()==0) file << "1";
+		if (config[0][2].compare("quantity") == 0 && csv[i][0].size() == 0) file << "1";
 		file << csv[i][0];
 		if (config[0][2].compare("varchar") == 0) file << "'";
 		for (int j = 1; j < csv[0].size(); j++) {
@@ -748,10 +748,10 @@ int createCSV(vectorArray csv, std::string exportFolderPath, vectorArray config,
 				symbol = "#";
 			}
 
-			if (config[j][2].compare("varchar")==0) file << "'";
+			if (config[j][2].compare("varchar") == 0) file << "'";
 			if (config[j][2].compare("quantity") == 0 && csv[i][j].size() == 0) file << "1";
 			file << csv[i][j];
-			if (config[j][2].compare("varchar")==0) file << "'";
+			if (config[j][2].compare("varchar") == 0) file << "'";
 		}
 	}
 	file.close();
@@ -773,13 +773,13 @@ vectorArray load_config(std::string configPath)
 		// Read each line of the file
 		while (std::getline(file, line)) {
 			std::istringstream iss(line);
-			std::string key, value,exportType;
+			std::string key, value, exportType;
 			/*if (std::getline(iss, key, '#'))
 			{
 				key.erase(0, key.find_first_not_of(" \t\r\n"));
 					key.erase(key.find_last_not_of(" \t\r\n") + 1);
 					ECHO(("L:%d key %s \n", __LINE__, key.c_str()));
-					
+
 			}*/
 			if (std::getline(iss, key, '#') && std::getline(iss, value, '#') && std::getline(iss, exportType)) {
 				key.erase(0, key.find_first_not_of(" \t\r\n"));
@@ -791,7 +791,7 @@ vectorArray load_config(std::string configPath)
 				exportType.erase(0, exportType.find_first_not_of(" \t\r\n"));
 				exportType.erase(exportType.find_last_not_of(" \t\r\n") + 1);
 				ECHO(("L:%d value %s \n", __LINE__, exportType.c_str()));
-				config.push_back({key, value, exportType });
+				config.push_back({ key, value, exportType });
 			}
 		}
 		ECHO(("Config loaded succesfully.\n"));
@@ -809,8 +809,8 @@ std::vector<std::string> read_properties(EPM_action_message_t msg)
 {
 	char
 		* Argument,
-		*Flag,
-		*Value;
+		* Flag,
+		* Value;
 	std::string
 		AttachPath,
 		config,
@@ -831,11 +831,11 @@ std::vector<std::string> read_properties(EPM_action_message_t msg)
 		{
 			AttachPath = Value;
 		}
-		if(strcmp("FirstLine", Flag) == 0 && Value != nullptr)
+		if (strcmp("FirstLine", Flag) == 0 && Value != nullptr)
 		{
 			definefirstline = true;
-			FirstLine= Value;
-			ECHO(("L:%d first line %s \n",__LINE__, Value));
+			FirstLine = Value;
+			ECHO(("L:%d first line %s \n", __LINE__, Value));
 			ECHO(("L:%d first line %s \n", __LINE__, FirstLine.c_str()));
 		}if (strcmp("callBat", Flag) == 0)
 		{
@@ -865,11 +865,11 @@ int TPV_BOM2CSV_TC14(EPM_action_message_t msg)
 	int n_attachments;
 	char
 		* class_name,
-		*ItemId,
-		*RevId;
+		* ItemId,
+		* RevId;
 	tag_t
 		RootTask,
-		*attachments,
+		* attachments,
 		class_tag;
 	definefirstline = false;
 
@@ -881,7 +881,7 @@ int TPV_BOM2CSV_TC14(EPM_action_message_t msg)
 	ECHO(("Po configu\n"));
 	AttachPath = props[1];
 	ECHO(("L:%d First Line %s \n", __LINE__, props[2].c_str()));
-	FirstLine=props[2];
+	FirstLine = props[2];
 	ECHO(("L:%d First Line %s \n", __LINE__, FirstLine.c_str()));
 	int config0size = config[0].size();
 	int configsize = config.size();
@@ -909,8 +909,10 @@ int TPV_BOM2CSV_TC14(EPM_action_message_t msg)
 			ECHO(("L:%d  \n", __LINE__));
 			csv = RecursiveBOM(ItemId, RevId, csv, config, true, AttachPath);
 			ECHO(("L:%d  \n", __LINE__));
+			TC_write_syslog("\ncsv>");
+			TC_write_syslog("%d", csv.size());
+			TC_write_syslog("<csv\n");
 			createCSV(csv, exportFolderPath, config, ItemId, RevId, FirstLine);
-			
 		}
 	}
 	return 0;
