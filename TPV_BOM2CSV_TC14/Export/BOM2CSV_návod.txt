@@ -1,35 +1,37 @@
-config Form·t
+config Form√°t
 druh# hodnota# typ#
 
-Druh moûnosti:
-ExportFolder	(vûdy na 1. ¯·dku, odkazuje na sloûku kam se vyexportuje csv)
-ItemType	(vûdy na 2. ¯·dku, vrcholov˝ item na kterÈm se wokflow spustÌ)
-Item		(libovoln˝ ¯·dek, zept· se na hodnotu z Itemu)
-BOM		(libovoln˝ ¯·dek, zept· se na hodnotu z BOMu)
-Rev		(libovoln˝ ¯·dek, zept· se na hodnotu z Revize itemu)
+Druh mo≈ænosti:
+ExportFolder	(v≈ædy na 1. ≈ô√°dku, odkazuje na slo≈æku kam se vyexportuje csv)
+ItemType	(v≈ædy na 2. ≈ô√°dku, vrcholov√Ω item na kter√©m se wokflow spust√≠)
+AttachPath	(V≈ædy na 3. ≈ô√°dku, urƒçuje kam se exportuj√≠ PDF a DWG [slo≈æky mus√≠ existovat]
+Item		(libovoln√Ω ≈ô√°dek, zept√° se na hodnotu z Itemu)
+BOM		(libovoln√Ω ≈ô√°dek, zept√° se na hodnotu z BOMu)
+Rev		(libovoln√Ω ≈ô√°dek, zept√° se na hodnotu z Revize itemu)
 Rev4Relation	
-GetImanFilePath	(libovoln˝ ¯·dek, zapÌöe cestu na PDF nebo DXF z volume)
-Relation	(libovoln˝ ¯·dek, vr·tÌ hodnotu p¯es definovanou relaci)
-Writte		(libovoln˝ ¯·dek, vr·tÌ libovolnou hodnotu)
-Export		(PDF a DXF musÌ b˝t v configu zasebou a jsou oddÏleny ; exportuje PDF nebo DXF a zapÌöe cestu)
+GetImanFilePath	(libovoln√Ω ≈ô√°dek, zap√≠≈°e cestu na PDF nebo DXF z volume)
+Relation	(libovoln√Ω ≈ô√°dek, vr√°t√≠ hodnotu p≈ôes definovanou relaci)
+Writte		(libovoln√Ω ≈ô√°dek, vr√°t√≠ libovolnou hodnotu)
+Export		(PDF a DXF mus√≠ b√Ωt v configu zasebou a jsou oddƒõleny ; exportuje PDF nebo DXF a zap√≠≈°e cestu)
 
-Hodnota moûnosti:
-Druh		   popis		 uk·zka
-Item, BOM, Rev 	-> n·zev atributu 	 (tpv4_atribut1)
+Hodnota mo≈ænosti:
+Druh		   popis		 uk√°zka
+Item, BOM, Rev 	-> n√°zev atributu 	 (tpv4_atribut1)
 GetImanFilePath -> typ,relace 		 (PDF,IMAN_specification)
-Relation	-> relace,n·zev atributu (TC_Primary_Design_Representation,tpv4_TPV_klic)
-Writte		-> libovoln· hodnota	 (1)
+Relation	-> relace,n√°zev atributu (TC_Primary_Design_Representation,tpv4_TPV_klic)
+Writte		-> libovoln√° hodnota	 (1)
 Export		-> typ,relace		 (PDF,IMAN_specification)
 
-Typ moûnosti:
-varchar 	-> obalÌ hodnotu do uvozovek
+Typ mo≈ænosti:
+varchar 	-> obal√≠ hodnotu do uvozovek
 number		-> nic
-quantity 	-> pokud je hodnota pr·zdn·, zapÌöe 0
+quantity 	-> pokud je hodnota pr√°zdn√°, zap√≠≈°e 0
 ----------------------------------------------------------------------------------------------------------
-Uk·zka config
+Uk√°zka config
 
 ExportFolder# C:\\SPLM\\Apps\\Export\\csv# varchar
 ItemType# TPV4_sestavaRevision# varchar
+AttachPath: \\Sr006\# varchar
 BOM# bl_parent# number
 Item# item_id# number
 Rev# item_revision_id# number
@@ -47,6 +49,5 @@ Export# PDF,IMAN_specification# number
 Handler TPV_BOM2CSV_TC14 argumenty
 Argument		Hodnota
 -ConfigPath		C:\SPLM\Apps\Export\config_BOM2CSV_sestava.txt
--ExportFolderPath	\\Sr006\
 -FirstLine		ItemIDVyssi#ItemID#ItemRevisionID#Nazev#TYP#Mnozstvi#Objem#Plocha#Hmotnost#Pozice#KLIC_TPV_RAW#KLIC_TPV#PRILOHY
 -CallBat		TC2TPV.bat
