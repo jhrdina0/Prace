@@ -60,7 +60,7 @@ extern "C" DLLAPI int TPV_PDFSaveAs_TC14_init_module(int* decision, va_list args
 
     // Registrace action handleru
     int Status = EPM_register_action_handler("TPV_PDFSaveAs_TC14", "", TPV_PDFSaveAs_TC14);
-    if (Status == ITK_ok) printf("Handler pro zkopirovani PDF z revize zakaznika do revize dilce a p¯ipojenÌ logickÈho objektu % s \n", "TPV_PDFSaveAs_TC14");
+    if (Status == ITK_ok) printf("Handler pro zkopirovani PDF z revize zakaznika do revize dilce a p≈ôipojen√≠ logick√©ho objektu % s \n", "TPV_PDFSaveAs_TC14");
 
 
     return ITK_ok;
@@ -110,29 +110,30 @@ static void add_logical_object(tag_t pdf) {
     int error_code = GRM_create_relation(pdf, secondary_object_tag, relation_type, NULLTAG, &relation);
     int error_code2 = GRM_save_relation(relation);
     if (error_code2 != 0) {
-        ECHO(("%d Relaci nebylo moûnÈ vytvo¯it, pravdÏpodobnÏ jiû existuje.\n", error_code2));
+        ECHO(("%d Relaci nebylo mo≈æn√© vytvo≈ôit, pravdƒõpodobnƒõ ji≈æ existuje.\n", error_code2));
     }
     else {
-        ECHO(("Relace vytvo¯ena.\n"));
+        ECHO(("Relace vytvo≈ôena.\n"));
     }
     AOM_save_without_extensions(pdf);
 }
 
-static tag_t saveAs(tag_t object_to_save, char* new_obj_name,  tag_t add_to_object = 0, char* relation_type_name = (char*)"") {
-    int stat;
-    tag_t objectType = NULLTAG;
+static tag_t saveAs(tag_t object_to_save, std::string new_obj_name,  tag_t add_to_object = 0, std::string relation_type_name = "") {
+    int stat,
+        numDeepCopyData;
+    tag_t objectType,
+        saveAsInput,
+        * deepCopyData,
+        newObject;
+
     stat = TCTYPE_ask_object_type(object_to_save, &objectType);
     ECHO(("\nstat: %d\n", stat));
-    tag_t saveAsInput = NULLTAG;
     stat = TCTYPE_construct_saveasinput(objectType, &saveAsInput);
     ECHO(("stat: %d\n", stat));
-    stat = AOM_set_value_string(saveAsInput, "object_name", new_obj_name);
+    stat = AOM_set_value_string(saveAsInput, "object_name", new_obj_name.c_str());
     ECHO(("stat: %d\n", stat));
-    int numDeepCopyData = 0;
-    tag_t* deepCopyData = NULL;
     stat = TCTYPE_ask_deepcopydata(object_to_save, TCTYPE_OPERATIONINPUT_SAVEAS, &numDeepCopyData, &deepCopyData);
     ECHO(("stat: %d\n", stat));
-    tag_t newObject;
     stat = TCTYPE_saveas_object(object_to_save, saveAsInput, numDeepCopyData, deepCopyData, &newObject);
     ECHO(("stat: %d\n", stat));
     stat = TCTYPE_free_deepcopydata(numDeepCopyData, deepCopyData);
@@ -150,7 +151,7 @@ static tag_t saveAs(tag_t object_to_save, char* new_obj_name,  tag_t add_to_obje
         stat = AOM_lock(add_to_object);
         ECHO(("stat: %d\n", stat));
 
-        stat = GRM_find_relation_type(relation_type_name, &relation_type);
+        stat = GRM_find_relation_type(relation_type_name.c_str(), &relation_type);
         ECHO(("stat: %d\n", stat));
         stat = GRM_create_relation(add_to_object, newObject, relation_type, NULL, &relation);
         ECHO(("stat: %d\n", stat));
@@ -166,7 +167,7 @@ static tag_t saveAs(tag_t object_to_save, char* new_obj_name,  tag_t add_to_obje
 int TPV_PDFSaveAs_TC14(EPM_action_message_t msg)
 {
     ITK_set_bypass(true);
-    ECHO(("************************** zaË·tek TPV_PDFSaveAs_TC14 ******************************\n"));
+    ECHO(("************************** zaƒç√°tek TPV_PDFSaveAs_TC14 ******************************\n"));
     int n_attachments;
     char
         * class_name,
@@ -198,7 +199,7 @@ int TPV_PDFSaveAs_TC14(EPM_action_message_t msg)
         {
             PDF = find_dataset(attachments[i]);
             if (PDF == 0) {
-                ECHO(("PDF V˝kres nenalezen ve vykresu zakaznika nenalezen.\n"));
+                ECHO(("PDF V√Ωkres nenalezen ve vykresu zakaznika nenalezen.\n"));
                 return 0;
             }
             else {
@@ -211,16 +212,19 @@ int TPV_PDFSaveAs_TC14(EPM_action_message_t msg)
 
     }
 
+    MEM_free(attachments);
+
     if (v_p_dilRevision_tag and v_zakaznikaRevision_tag and PDF) {
         ECHO(("Vykres zakaznika, vykres dilec a PDF nalezeno, zacinam save as pro PDF...\n"));
         char *item_id,
              *vnejsi_revize;
+
         AOM_ask_value_string(v_p_dilRevision_tag, "item_id", &item_id);
         AOM_ask_value_string(v_p_dilRevision_tag, "tpv4_vnejsi_revize", &vnejsi_revize);
         std::string new_pdf_name = item_id;
         new_pdf_name += vnejsi_revize;
         TC_write_syslog(new_pdf_name.c_str());
-        tag_t newPDF = saveAs(PDF, (char*)new_pdf_name.c_str(), v_p_dilRevision_tag, (char*)"IMAN_specification");
+        tag_t newPDF = saveAs(PDF, new_pdf_name, v_p_dilRevision_tag, "IMAN_specification");
         add_logical_object(newPDF);
     }
     else {
