@@ -24,6 +24,7 @@
 #include <ps/ps.h>
 #include <bom/bom.h>
 #include <iostream>
+#include <cstdlib>
 #include <fstream>
 #include <sstream>
 #include <vector>
@@ -31,6 +32,9 @@
 #include <tccore/uom.h>
 #include <ae\ae.h>
 #include <tccore\grm.h>
+#include <nls/nls.h>
+
+#include <filesystem>
 
 
 #define TC_HANDLERS_DEBUG "TC_HANDLERS_DEBUG" 
@@ -164,6 +168,27 @@ static tag_t saveAs(tag_t object_to_save, std::string new_obj_name,  tag_t add_t
     return newObject;
 }
 
+void exec_command(const char* command) {
+    FILE* fp;
+    char buffer[1024];
+
+    // Open a pipe to the command
+    fp = _popen(command, "r");
+
+    if (fp == NULL) {
+        printf("Failed to execute command.\n");
+        return;
+    }
+
+    // Read output from the command line by line
+    while (fgets(buffer, sizeof(buffer), fp) != NULL) {
+        ECHO(("%s", buffer));
+    }
+
+    // Close the pipe
+    _pclose(fp);
+}
+
 int TPV_PDFSaveAs_TC14(EPM_action_message_t msg)
 {
     ITK_set_bypass(true);
@@ -172,7 +197,6 @@ int TPV_PDFSaveAs_TC14(EPM_action_message_t msg)
     char
         * class_name,
         * object_type;
-
     tag_t
         RootTask,
         * attachments,
@@ -183,6 +207,10 @@ int TPV_PDFSaveAs_TC14(EPM_action_message_t msg)
 
     EPM_ask_root_task(msg.task, &RootTask);
     EPM_ask_attachments(RootTask, EPM_target_attachment, &n_attachments, &attachments);
+
+    std::vector<tag_t> PDFs;
+
+    ECHO(("Počet attachmentů: %d\n", n_attachments));
 
     for (int i = 0; i < n_attachments; i++)
     {
@@ -195,41 +223,97 @@ int TPV_PDFSaveAs_TC14(EPM_action_message_t msg)
 
         ECHO(("Class_name: %s\n", class_name));
 
-        if (strcmp(class_name, "TPV4_v_zakaznikaRevision") == 0)
+        if (strcmp(class_name, "Dataset") == 0)
         {
-            PDF = find_dataset(attachments[i]);
-            if (PDF == 0) {
-                ECHO(("PDF Výkres nenalezen ve vykresu zakaznika nenalezen.\n"));
-                return 0;
-            }
-            else {
-                v_zakaznikaRevision_tag = attachments[i];
+            char* object_type;
+            AOM_ask_value_string(attachments[i], "object_type", &object_type);
+            if (strcmp(object_type, "PDF") == 0) {
+                TC_write_syslog("PDF Found !\n");
+                PDFs.push_back(attachments[i]);
             }
         }
         else if (strcmp(class_name, "TPV4_v_p_dilRevision") == 0) {
             v_p_dilRevision_tag = attachments[i];
         }
-
     }
 
     MEM_free(attachments);
 
-    if (v_p_dilRevision_tag and v_zakaznikaRevision_tag and PDF) {
-        ECHO(("Vykres zakaznika, vykres dilec a PDF nalezeno, zacinam save as pro PDF...\n"));
-        char *item_id,
-             *vnejsi_revize;
+    char* PDF_name,
+        * v_p_dilID,
+        * v_p_dilRevID;
 
-        AOM_ask_value_string(v_p_dilRevision_tag, "item_id", &item_id);
-        AOM_ask_value_string(v_p_dilRevision_tag, "tpv4_vnejsi_revize", &vnejsi_revize);
-        std::string new_pdf_name = item_id;
-        new_pdf_name += vnejsi_revize;
-        TC_write_syslog(new_pdf_name.c_str());
-        tag_t newPDF = saveAs(PDF, new_pdf_name, v_p_dilRevision_tag, "IMAN_specification");
-        add_logical_object(newPDF);
+    tag_t dataset_type,
+          new_dataset,
+          relation_type,
+          relation;
+
+    if (v_p_dilRevision_tag) {
+        AOM_ask_value_string(v_p_dilRevision_tag, "item_id", &v_p_dilID);
+        AOM_ask_value_string(v_p_dilRevision_tag, "tpv4_vnejsi_revize", &v_p_dilRevID);
+
+        std::string text = v_p_dilID;
+        text += " ";
+        text += v_p_dilRevID;
+
+        AOM_lock(v_p_dilRevision_tag);
+
+        GRM_find_relation_type("TPV4_Export_do_IFS", &relation_type);
+
+        for (int i = 0; i < PDFs.size(); i++) {
+            ECHO(("PDF save as start...\n"));
+            AOM_ask_value_string(PDFs[i], "object_name", &PDF_name);
+
+
+            std::string path = "C:\\SPLM\\Apps\\TiskPDF\\pdf\\";
+            path += PDF_name;
+
+            int ITK_OK = AE_export_named_ref(PDFs[i], "PDF_Reference", path.c_str());
+            ECHO(("Export dataset OK: %d\n", ITK_OK));
+            
+            std::string cmd = "C:\\SPLM\\Apps\\TiskPDF\\callPDFMargin.bat ";
+            cmd += "\"";
+            cmd += text;
+            cmd += "\" ";
+            cmd += "\"";
+            char* utf8_str;
+            ITK_OK = NLS_convert_from_utf8_to_platform_encoding(path.c_str(), &utf8_str);
+            cmd += utf8_str;
+            cmd += "\"";
+
+            TC_write_syslog(cmd.c_str());
+
+
+            exec_command(cmd.c_str());
+
+            AE_find_datasettype2("PDF", &dataset_type);
+            ITK_OK = AE_create_dataset_with_id(dataset_type, PDF_name, "", "", "", &new_dataset);
+            ECHO(("\nCreate dataset OK: %d\n", ITK_OK));
+
+            AOM_lock(new_dataset);
+            ITK_OK = AE_import_named_ref(new_dataset, "PDF_Reference", path.c_str(), "", SS_BINARY);
+            ECHO(("Import named ref OK: %d\n", ITK_OK));
+
+            if (std::filesystem::remove(utf8_str)) {
+                ECHO(("file path deleted.\n"));
+            }
+            else {
+                ECHO(("DeleteFileA failed\n"));
+            }
+
+            AOM_save_with_extensions(new_dataset);
+            PDF = new_dataset;
+
+            GRM_find_relation_type("TPV4_Export_do_IFS", &relation_type);
+            ITK_OK = GRM_create_relation(v_p_dilRevision_tag, PDF, relation_type, NULL, &relation);
+            ECHO(("GRM_create_relation ITK_OK: %d\n", ITK_OK));
+            ECHO(("New relation tag: %d\n", relation));
+
+            GRM_save_relation(relation);
+        }
     }
-    else {
-        ECHO(("Spatne vstupni parametry - PDF, vykres zakaznika nebo vykres dilec chybi v Targetech\n"));
-    }
+
+    AOM_save_with_extensions(v_p_dilRevision_tag);
 
     ECHO(("************************** konec TPV_PDFSaveAs_TC14 ******************************\n"));
     return 0;
