@@ -1,6 +1,6 @@
 ExportFolder# C:\\SPLM\\Apps\\Export\\csv# varchar
 ItemType# TPV4_sestavaRevision# varchar
-AttachPath: \\Sr006\# varchar
+AttachPath# \\Sr006\# varchar
 BOM# bl_parent# number
 Item# item_id# number
 Rev# item_revision_id# number
